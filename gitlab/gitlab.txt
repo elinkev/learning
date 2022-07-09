@@ -1,0 +1,56 @@
+Gitlab pipeline has two main components:
+	- job -> describes the tasks that needs to be done
+	- stages -> defines in which orders jobs will be completed
+Gitlab Runner
+	- executes gitlabj jobs
+	- can be run in vm/docker/etc
+
+- Create blank gitlab project
+- Create gitlab pipeline
+	- CI/CD
+		- Pipelines
+			- Use template or Editor or create .gitlab-ci.yml file [use validation extension in editor to validate the file locally]
+
+			image: php:latest										#if your jobs require some dependencies, like php for example, specify the docker image using 'image' tag - gitlab runner will pull this image on all jobs
+
+			variables:												#define variables that can be used in jobs, if its a sensitive variable like a password, it can be controlled with Gitlab -> Settings -> CI/CD -> Variables -> Add variable
+				SOME_VARIABLE: some_user_name
+
+			- stages  												#executed in order that are listed,
+				- build
+				- test
+				- deploy
+
+			- build-job:											#job for 'build' stage, job can be executed as standalone job, not associated with any stage
+				stage: build
+				script: 											#required keyword, specify which commands the gitlab runner should executed while running this job, executed in order
+					- echo "Compiling"
+					- echo "Write something" > build/some-file		#jobs are executed in different environments,
+				artifacts:											#so if one job creates something (artifacts), another job cant access it, this can be controlled with 'artifacts' and 'dependencies' keywords\
+					paths:
+						- build/some-file							#this will be downloaded to all other subsequent jobs
+
+			- unit-test-job:										#two jobs that will be run on test stage, they are executed at the same time asynchronous
+				stage: test
+				script:
+					- echo "Unit tests"
+
+			- behat-test-job:
+				stage: test
+				script:
+					- echo "Behat tests"
+
+			- deploy-job
+				stage: deploy
+				script:
+					- echo "Deploying"
+					- php --version									#docker image is pulled and now we have access to php commands
+					- echo $SOME_VARIABLE							#created in 'variables' section
+					- echo $SOME_PASSWORD							#created in gitlab, protected and masked
+
+
+Gitlab predefined variables - https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+Gitlab runners can be ran as shared or specific:
+	- Shared are free runners that are hosted by hitlab, there is a limit on how many runners can be ran per month
+	- Specific runners are runners that are installed as a software for a project
+In order to now download images/libraries on each pipeline execution, use gitlab caching - https://docs.gitlab.com/ee/ci/caching/
