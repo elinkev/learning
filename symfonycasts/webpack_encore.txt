@@ -1,0 +1,78 @@
+https://symfonycasts.com/screencast/webpack-encore
+
+--- Webpack Encore ---
+- Tool to build and compile js/css files
+- composer require encore -> installs symfony bundle
+- package.json -> defined packages, similar to composer.json file
+- yarn install | npm install -> node package managers that install packages defined in package.json
+- ./node_modules -> installed packages dir, like vendors folder for composer
+- ./public/build -> dir where webpack puts the final built files
+- ./webppack.config.json -> configuration file for encore, defines how webpack behaves
+     - .setOutputPath('public/build') -> where to build files
+     - .setPublicPath('/build') ->
+     - .addEntry('app', './assets/js/app.js') -> creates an app.js file
+     - .addEntry('some_page', './assets/js/some_page.js') ->  creates some_page.js file, each entry is like a standalone application
+        - {{ encore_entry_script_tags('app') }} -> renders app js
+        - {{ encore_entry_script_tags('some_page') }} -> renders some_page js
+        - {{ encore_entry_link_tags('some_page') }} -> renders some_page css
+    - .addStyleEntry() -> same as add entry but for css files
+- ./node_modules/.bin/encore dev -> runs webpack and builds files
+- entrypoints.json -> script tags? 3
+- yarn watch | ./node_modules/.bin/encore --watch -> rebuilds app right after changes
+
+- each js file needs to be expored to be used somewhere, refered to as modules:
+     - module.exports = function() { console.log(1); }
+     - import getConsole from './get_console';
+     - import can be used asyncronously:
+        if (true) {
+            import('./get_console').then((module) => {
+                module.default();
+            });
+        }
+
+Module export & Import:
+- export default function () { console.log(1); }; -> To export one thing from a module, use a `default` keyword
+- import getSomething from './get_something'; -> Import it like this
+- @improt '~bootstrap/dist/css/bootstrap.css'; -> In app.css file, import other css files like this, or if package.json of the module contains 'style' or 'sass' keyword, just use @import '~bootstrap'
+
+Package manager:
+- yarn add jquery -> Installs a 3rd party library
+- import $ from 'jquery'; -> Import it from node_modules folder
+    - node_modules/jquery/package.json contains "main" keyword, it will point to the correct path, so its actuall importing from 'dist/js/jquery'
+    - $ is not a global varriable, so if juqery is being used from outside of webpack (in old html files), you will need to define a global varriable - `global.$ = $;`
+    - jquery plugins dont return a module, they modify the existing $ jquery module:
+        - import $ from 'jquery'; -> imports initial module
+        - import 'bootstrap'; -> modifies $ module, adding additional functionality
+        - $('#id').dropdown(); -> now works because bootstrap is imported
+- when installing a package, check its package.json file for 'style', 'sass', 'main' keywords
+
+Sass:
+- with encore you can use sass
+    - enable sass in webpack.config.js with .enableSassLoader()
+- rename app.css to app.scss
+
+Folder structure:
+    - assets
+        - css
+            - components -> css components
+            - helper -> varriables like colour
+            - layout -> header | footer
+            - app.css -> main css file that imports everything
+        - images
+        - js
+            - components -> js components
+            - app.js -> main js file that imports everything
+    - node_modules -> packages, like vendor
+    - public -> it shouldnt contain any js/css files that are not built be webpack
+        - build -> encore builds public files here, stuff like fonts, images
+
+Useful webpack configs:
+    .cleanupOutputBeforeBuild() -> cleans unecessary files before build
+    .copyFiles({from: './assets/images', to: 'images/[path][name].[ext]'}) -> copies files from private folder assets, to public folder
+    .enablePostCssLoader() -> library that runs code after css has been rendered, useful for stuff like auto-prefixer plugin
+
+- ./public/build/manifest.json -> shows original file name, to the final built file name
+
+Postcss & Babel:
+    - babel compiles modern js to plain js code to support old browsers
+    - postcss transforms styles using js plugins
