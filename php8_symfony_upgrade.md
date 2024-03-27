@@ -163,7 +163,7 @@ Now that we have all the packages fixed, we can update them with `composer updat
 
 After all packages are updated, we check if all platform requirements are met with `composer check-platform-reqs`
 
-```json
+```bash
 composer-runtime-api 2.2.2      success                                       
 ext-bcmath           8.3.1      success                                       
 ext-ctype            *          success provided by symfony/polyfill-ctype    
