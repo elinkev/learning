@@ -1,9 +1,11 @@
+notes taken from claude certification playlist - https://www.youtube.com/playlist?list=PLFz7SvAnfqLpjPCPJBkUy077BC5ecuE8c
+
 part 1 - what goes into exam
 	- domains
 	- tiers (opus/sonnet/haiku) - need to know which one to use
 	- sdk / api
 	- cenario based questions
-part 2 - 
+part 2 - agentic loops 
 	- api & sdk communication stack
 		- my code - customer placing an order
 		- anthropic sdk - library you install, wraps http complexity into simple method calls - waiter taking the order
@@ -69,3 +71,4 @@ part 2 -
 		- model-driven means claude what to do next (claude is planner)
 		- tool results go back as user role messages, wrapped in tool_result block with the matching id
 		- use while true with safety counter as fallback, never fixed range as primary exit condition
+part 3 - multi agent coordinator
