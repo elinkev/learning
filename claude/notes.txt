@@ -110,3 +110,13 @@ part 3 - multi agent coordinator
 		- always-on full pipeline - triggering all subagents on every request regardless of complexity (dynamic routing)
 		- overly narrow decomposition - splitting tasks so finely that subagents have overlapping scopes
 		- raw text handoffs - passing unstructured text between agents with no source attribution (source, url, date)
+	- 9 things to know
+		- hub-and-spoke - coordinator and subagents
+		- isolated context - subagents start fresh
+		- responsibilities - decompose -> delegate -> aggregate -> evaluate -> respond
+		- task tool - spawns subagents; coordinators allowed_tools must include "Task"
+		- parallel execution - multiple task calls
+		- sequential execution - one task per loop iteration
+		- dynamic routing - only invoke subagents needed for request
+		- structured harndoffs - every response from subagents need to be structured
+		- iterative refinement - coordinator evaluates results, re-delegates if needed
