@@ -1,0 +1,71 @@
+part 1 - what goes into exam
+	- domains
+	- tiers (opus/sonnet/haiku) - need to know which one to use
+	- sdk / api
+	- cenario based questions
+part 2 - 
+	- api & sdk communication stack
+		- my code - customer placing an order
+		- anthropic sdk - library you install, wraps http complexity into simple method calls - waiter taking the order
+		- claude api - handles api key auth and routes the requestt to the right model - kitchen ticket system
+		- claude servers - run the language model, return structured response object - kitchen coooking the dish
+	- messages.create() (5 parameters)- runs on every loop
+		- model (required) - opus/sonnet/haiku
+		- max_tokens (required) - if set too low, responses can get cut off, usefull to create distinct stop reason
+		- system - persistent instructions that shape every response
+		- tools - declere what actions claude is allowed to request
+		- messages - full conversation history
+	- what are tools - its not code, its a description
+		- claude never sees your tool implementation it only sees - name, description, input_schema
+		- claude decides what to call, your code decides how to execute it
+		- when claude decides to run a tool, it responds with the tool_use_id, name, input, your code runs the function, result returned to claude as tool_result
+	- every call to messages.create returns response object - 2 critical fields
+		- stop_reason - why claude stopped 
+			- end_turn - claude is done -> exit loop
+			- tool_use - claude needs your code to act
+				- this field has 3 important fields - id (unique), name (which tool claude wants to call), input (arguments for the tool)
+			- max_tokens - response cut off -> handle carefully
+		- content (array of blocks)
+			- type: "text" - claude narration or final answer
+			- type: "tool_use" - a tool claude wants to call
+			* may contain both in single response
+	- 4-step agentic loop pattern
+		- 1) call messages.create() - send full conversation history and tool definitions. Claude sees everything accumulated so far
+		- 2) check stop_reason - if its end_turn -> exit loop & return answer or if its tool_use -> continue to step 3
+		- 3) execute all requested tools - find every tool_use block in content array, run each one, collect results
+		- 4) append & loop back to step 1 - add claude response as Assistant message. Add all tool results as User message. Go to step 1
+	- loop in action
+		- 1) Messages: [user: "get weather in Tokyo and Paris"]
+		- stop_reason: tool_use - claude requests get_weather('Tokyo'). Your code executes, returns result
+		- 2) Messages: [user, assistant(Tokyo call), user(Tokyo result)]
+		- stop_reason: tool_use - claude sees Tokyo done, requests  get_weather('Paris')
+		- 3) Messages: [user, asst, user(Tokyo), asst(Paris call), user(Paris result)]
+		- stop_reason: end_turn - claude has both results, generates final answer, loop finishes
+		* claude figures on its on by reading the growing conversation history - it knows what was fetched previously and what is still missing
+	- model-driven vs scripted automation
+		- scripted example
+			- 1) always search
+			- 2) always calendar check
+			- 3) always payment
+			- order is hardcoded, cant addapt if a step returns unexpected data, you are the planner
+		- model-driven example:
+			- claude reads conversation context each iteration
+			- decides what tool to call based on what it knows so far
+			- calls one tool if thats all thats needed
+			- addapts to unexpected results, exists as soon as the goal is met, claude is the planner
+	- stop_reason - deep dive
+		- tool_use - claude is NOT done, it needs to call a tool to continue, find all text_use  blocks, execute every one, append results, loop back
+		- end_turn - claude is done. it has all information needed and produced final answer, break out of loop and return text content to user
+		- max_tokens - response was cut off, claude hit the token limit before finished
+	- 3 anti-patterns to avoid
+		- text parsing for loop control - checking literal words like 'done' or 'finished' to exit loop, claude might say 'done' in step 1 but theres still a lot of steps, always use stop_reason
+		- fixed iteration cap as primary control - primary exit must always be stop_reason == end_turn
+		- keyword detection for tool routing - read the structured tool_use blocks in the content array, dont check if claudes text mentions a tools name to decide what to call
+	- 7 things to know
+		- loop pattern
+		- tools are descriptions
+		- stop_reason is the only control signal
+		- messages array grow every iteration
+		- model-driven means claude what to do next (claude is planner)
+		- tool results go back as user role messages, wrapped in tool_result block with the matching id
+		- use while true with safety counter as fallback, never fixed range as primary exit condition
