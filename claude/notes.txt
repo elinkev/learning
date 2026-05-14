@@ -72,3 +72,41 @@ part 2 - agentic loops
 		- tool results go back as user role messages, wrapped in tool_result block with the matching id
 		- use while true with safety counter as fallback, never fixed range as primary exit condition
 part 3 - multi agent coordinator
+	- why move from single to multi agent system - coordinator and subagents
+		- a single agent can hold limited amount of context
+		- each agent can be specialized - coding agent, research agent, writer reviewer etc
+		- can run multiple agents simultaneously
+		- multi agent only when constraints force it, most tasks can be handled with single agentic loop
+	- hub-and-spoke architecture
+		- hub - coordinator, all communication go throu coordinator
+		- coordinator owns error handling, if subagent fails, its coordinators job to decide to retry or degrade gracefully
+		- coodinator controls the flow - it decideds what context the subagents get, subagents dont know anything by themselves or can share info between themselves
+	- isolated context
+		- coordinator sees everything - original user request, all task tool calls, all tool result responses, full conversation with user
+		- subagent - only sees its own system prompt that was passed by the coordinator
+	- coordinator responsibilities
+		- 1) decompose - break user request into subtasks with clear scopes for each agent
+		- 2) delegate - issue task tool calls , one per sub agent, with fully specified prompt that the agent needs
+		- 3) aggregate - collect all subagent responses and synthesize them into one coherent view
+		- 4) evaluate - check quality and completeness - red-deleage if needed
+		- 5) respond - deliver the final answer to the user, only after QA passes
+	- the task tool (delegation
+		- 1) coordinator emits task call - coordinators response includes a tool_use block with type: "task", target agent name, and a fully specified prompt
+		- 2) sdk launches fresh claude instance - sdk spawns new claude session using target agents AgentDefinition - system prompt, tools, model settings
+		- 3) subagent runs its own agentic loop - executs its own 4-step loop independently, including any tool calls it needs, until it reaches end_turn
+		- 4) result returned as tool_result - the subagents final response come back into coordinators message history as a tool_result. Coordinators allowed_tools must include "Task"
+	- parallel vs sequential excecution
+		- parallel - coordinator returns two or more Task tool calls in single response, sdk launches all subagents simultaneously
+		- sequential - coordinator issues one Task call per loop turn, waits for result before continuing, used when next step needs previous steps output
+	- dynamic routing & work partitioning
+		- dynamic routing - coordinator evaluates the request first, then decides which subagents to invoke
+		- work partitioning - each subagent has distinct, non overlapping scope - no two agents work on the same data
+	- iterative refinement & structured handoffs
+		- iterative refinement (evaluate)- after receiving subagent response, coordinator checks QA, if something is not right - it re-delegates, not necessary to the same agent
+		- structured handoffs - each finding from subagent must be tagget with source name, url, date
+	- 5 anti-patterns
+		- direct subagent-to-subagent communication - subagents never message each other
+		- assuming inherited context - subagents start fresh
+		- always-on full pipeline - triggering all subagents on every request regardless of complexity (dynamic routing)
+		- overly narrow decomposition - splitting tasks so finely that subagents have overlapping scopes
+		- raw text handoffs - passing unstructured text between agents with no source attribution (source, url, date)
