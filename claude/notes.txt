@@ -175,3 +175,51 @@ part 4 - subagent config & context
 		- Fork = multiple subagents from same baseline, each exploring different direction
 		- specify goals + output format - never specify exact tool call sequences
 		- Structured metadata in all handoffs - source, date, confidence score for every cross-agent data transfer
+part 5 - multi-step workflows
+	- probabilistic vs deterministic compliance
+		- probabilistic - relying on claude's judgement, you write the prompt, claude reads it and usually follows them, llms can be persuaded and edge cases exist
+		- deterministic - using code-level checks, your code enforces the rule, claude's reasoning is irrelevant
+		- claude is a language model - it can be persuaded. Given convincing context it might skip a step it would normally follow
+		- production rule - safety critical constraints MUST be enforced deterministically in code
+	- prerequisite gates 
+		- gate - a check that blocks execution of tool B until tool A completes successfully 
+		- implementation - wrapper function, before the downstream tool executes, the wrapper checks prerequisite state, if not satisfied - raises an exception
+		- example - payment gate - payment_tool can only run after validate_card_tool returns success. Payment wrapper checks a flag set by validator - no flag - no payment
+		* gates are code-enforced - claude cannot skip them
+	- enforcement vs prompt guidance - when to use which
+	 	- code enforcements - safety matters, compliance required, financial transactions, irreversible actions
+		- prompt guidance - style preferences, tone and format, non-critical workflow ordering, mistakes that can be corrected
+		* in other words - if action cannot be undone - use code enforcements
+	- structured escalation handoffs
+		- when to escalate - confidence drops below threshold, instructions are ambiguous, irreversible action is pending and agent isnt certain it should proceed
+		- what to include in the handoff - summary of what was attempted, current state of the task, specific decision the human needs to make
+		- format - structured json with 4 fields - action_requested (what human needs to do), context (what happened so far), options (available choices), recommended_action (what agents thinks is best)
+		* escalation can never be vague, never pass "i need help" or "i got confused" for human review, always include actionable decision context
+	- multi-concern decomposition example
+		- single complex request "is this transaction safe?" 
+		- coordinator splits this to 3 agents - fraud_check_agent, compliance_agent, risk_score_agent
+		- each concern is isolated, each agent is specialized, each agent run parallel (unless they need each others outputs)
+	- hooks in the agent sdk
+		- hooks fire automatically around every tool call in the agentic loop
+		- PreToolUse hook - fires before execution, usecases - block by raising exception, modify input before execution, log for auditing
+		- PostToolUse hook - fires after execution, usecases - validate output, transform result before claude sees it, record the outcome for auditing
+		- common use cases - audit logging, rate limiting (block over-called tools), output sanitization (strip sensitive data), schema validation (reject malformed input)
+	- hooks code pattern
+		- return None - allow the tool through unchanged, tool executes normally
+		- raise Exception - block the call, tool will NOT execute, claude receives the error
+		- return modified dict - override the input before execution, tool runs with your modified params
+		* memorize these 
+	- 5 anti-patterns
+		- "dont run payment without validation" as prompt, trusting claude will follow it. Correct way is to use code gate that blocks payment_tool, until validate_card_tool passes
+		- Claude calls tools out of oder - it thinks skipping a step is efficient. Correct way is to enforce order with prerequisite gate checks
+		- escalating with "i need help" - human has no context to act. Correct way is using structured handoff - action_requested, context, options, recommended_action
+		- registering hooks but ignoring their return values. Always propagate hook decisions - if a hook block, the tool must not run
+		- decomposing depended concerns in parallel - agents that share state or need each others output. Only parallelize truly independent investigations
+	- 7 thinks to know
+		- probabilistic = claudes judgement (prompts), deterministic = your code (enforcement)
+		- safety-critical constraints MUST be code-enforced
+		- prerequisite gates block downstream tools until prerequisites succeed
+		- irreversibility test - if a mistake cannot be undone -> code enforcement is required
+		- structured escalation handoffs - always include action_requested, context, options, recommended_action
+		- PreToolUse can block, modify, allow. PostToolUse can validate, transform, record
+		- Multi-concert decomposition - parallelize independent concerns only, if concern B need A's output - use sequential
