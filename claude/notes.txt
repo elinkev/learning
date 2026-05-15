@@ -80,7 +80,7 @@ part 3 - multi agent coordinator
 	- hub-and-spoke architecture
 		- hub - coordinator, all communication go throu coordinator
 		- coordinator owns error handling, if subagent fails, its coordinators job to decide to retry or degrade gracefully
-		- coodinator controls the flow - it decideds what context the subagents get, subagents dont know anything by themselves or can share info between themselves
+		- coordinator controls the flow - it decideds what context the subagents get, subagents dont know anything by themselves or can share info between themselves
 	- isolated context
 		- coordinator sees everything - original user request, all task tool calls, all tool result responses, full conversation with user
 		- subagent - only sees its own system prompt that was passed by the coordinator
@@ -120,3 +120,58 @@ part 3 - multi agent coordinator
 		- dynamic routing - only invoke subagents needed for request
 		- structured harndoffs - every response from subagents need to be structured
 		- iterative refinement - coordinator evaluates results, re-delegates if needed
+part 4 - subagent config & context
+	- raw api vs claude agent sdk
+		- raw api - /messages endpoint, dirrect http call to claude servers, you manage every loop, every retry
+		- sdk - python framework, built on top of raw api, gives structured building blocks - agents, tools, sessions
+		- api = library, sdk = framework
+	- task tool - how subagents get created
+		- Task is a special built-in tool in the SDK, when coordinator calls it - sdk creates brand new agent instance
+		- to use Task tool, coordinators allowed_tools MUST include "Task"
+		- each task invocation creates new isolated subagent with no fresh context or memory of coordinators conversations
+		- task description becomes subagents first user message
+		- when subagent is finished, it responds back with "tool_result" in the coordinators messages array
+	- AgentDefinition - 5 fields needed to spawn subagent
+		- 1) name - agent identifier, used for logging and routing references
+		- 2) description - what the agent does
+		- 3) system_prompt - specialization instructions
+		- 4) tools - list of tool definitions the agent can use - does not grant permission
+		- 5) allowed_tools - list of tools that the agent can use, must be subset of tools, this is where minimum-tools design principle is enforced
+	- minimum-tools design principle
+		- wrong approach - every agent gets every available tool
+		- correct approach - every agent gets tools only needed for the job
+		- reasons why - security, reliability, cost
+	- context passing
+		- every subagent starts with zero context, coordinator must construct task description
+		- what to pass - relevant facts, constraints, exact output format needed, prior subagent results if needed
+		- what not to pass - entire conversation history
+	- execution patterns - parallel vs sequential
+		- sequential - use when task 2 needs tasks 1 output
+		- parallel - use when tasks are independent 
+		- mode determined by how you await - sequential awaits run one at a time, gather() awaits run concurrently
+		- if task share NO data dependencies -> parallel is correct choice
+	- fork sessions - same baseline, different paths
+		- fork - divergent subagent spawn - spawn multiple subagents from same baseline context, each exploring different direction
+		- use cases - brainstorming, a/b testing, hypothesis investigation
+		- coordinator collects data from all forks and synthesizes final decision
+	- goal-oriented prompt design
+		- goal + output format - what u want subagent to product and in which format
+		- constraints - what u want subagent to NOT do or access
+		- dont specify exact tool sequence - leave the decision to claude
+		- dont over-constrain execution - if u need to specify every step - use a script, not an agent
+	- 6 anti-patterns
+		- forgetting "Task" in allowed_tools - cant spawn subagents
+		- giving all tools too all agents
+		- dumping entire conversation history into task prompt
+		- procedural prompts that specify every step - let claude decide execution path
+		- unstructured data handoffs - raw text blobs with no metadata - always include source, date, confidence
+		- treating parallel vs sequential as a style preference
+	- 8 things to know	
+		- Task tool creates isolated subagents - "Task" MUST be in coordinators allowed_tools
+		- AgentDefinition has 5 fields - name, description, system_prompt, tools, allowed_tools
+		- Minimum-tools principle - each agent only gets tools needed for the job
+		- Subagents start black - pass all needed context: facts, constraints, format, prior results
+		- sequential = await chain - parallel = asyncio.gather()
+		- Fork = multiple subagents from same baseline, each exploring different direction
+		- specify goals + output format - never specify exact tool call sequences
+		- Structured metadata in all handoffs - source, date, confidence score for every cross-agent data transfer
