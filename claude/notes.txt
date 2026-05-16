@@ -267,4 +267,49 @@ part - 6
 		- normalization targets - unix to iso, numeric to string statuses, regional to standard dates
 		- keep hooks fast - they run on every tool call, no network calls
 		- "guarantee compliance" answer is always hooks, not prompts
-		
+part - 7
+	- domain 1 - task 1.6 - two fundamental approaches
+		- prompt chaining - fixed sequential pipeline, each steps output feeds into the next one, used when steps are known upfront
+		- dynamic decomposition - subtasks are generated depending on what is discovered on each step, used when scope is open-ended, cant predict full plan upfront
+	- prompt chaining
+		- fixed linear pipeline - steps designed upfront, step 1 output -> step 2 input -> step 3 input etc
+		- best for structured, repeatable tasks - code review, data extraction, report generation
+		- key advantage: focused context windows - each step sees only what it needs
+		- example usage:
+			- step 1 - multi file analysis (parallel) 
+			- step 2 - integration (sequential) 
+			- step 3 - summary 
+	- dynamic decomposition
+		- plan emerges from discoveries - you cannot write step 3 until u see step 1/2 results
+		- best for open-ended investigation - "add tests to legacy codebase", "audit for vulnerabilities" - u know the goal but not the path
+		- trade-off: higher cost, higher adaptability
+		- example usage: 
+			- phase 1 - map the structure (discovers: 12 modules, 4 have tests, 8 dont)
+			- phase 2 - prioritise (of the 8 tests, which are critical? discovers: 3 critical modules - auth, payment, user-data) 
+			- phase 3 - deep investigation (trace all code paths in the auth module. discovers: 15 code paths, 3 with complex branching)
+			- phase 4 - generate tests (writes tests for all 15 paths)
+			* this is impossible to plan because targets only emerge on phase 1-3
+	- choosing the right approach
+		- task structure - predictable, repeatable (prompt chaining, open-ended), expiratory (dynamic decomposition)
+		- example - code review, data extraction (prompt chaining), "add tests to legacy code" (dynamic decomposition)
+		- step dependencies - linear - output feeds next (prompt chaining), conditional - depends on findings (dynamic decomposition)
+		- planning - full plan known (prompt chaining), plan emerges during execution (dynamic decomposition)
+		- parallelism - often possible within steps (prompt chaining), less predictable - context-depended (dynamic decomposition)
+		- cost - lower - fixed step count (prompt chaining), higher - steps may multiple (dynamic decomposition)
+	- attention dilution - "lost in the middle"
+		- LLMs process the beginning and end of long context more reliably than the middle part
+		- impact on multi-file reviews - never send all files in single prompt
+		- solution: per-pass decomposition - one file per prompt, then a separate integration pass
+	- 5 anti-patterns
+		- all files, one prompt - attention dilution trap, always decompose into profile passes
+		- using dynamic decomposition for predictable tasks
+		- using chaining for exploratory tasks
+		- overly narrow subtask definitions - coordinator tasked with researching "create industries" decomposes it only into visual arts subtasks, something like fils or music is missed. Subtasks must cover the full scope
+		- no cross-file integration pass - always add a cross-cutting integration pass
+	- 6 things to know
+		- prompt chaining - fixed sequential pipeline, use for predictable repeatable tasks
+		- dynamic decomposition - adaptive plan, use for open ended investigation where scope is unknown
+		- split large reviews into per-file passes plus a separate cross-file integration pass
+		- attention dilution - LLMs pay less attention for content thats not in beginning or end of context
+		- adaptive plans add, remove, reorder steps based on findings
+		- chaining is cheaper, dynamic decomposition costs more
