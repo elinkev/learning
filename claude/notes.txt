@@ -223,3 +223,48 @@ part 5 - multi-step workflows
 		- structured escalation handoffs - always include action_requested, context, options, recommended_action
 		- PreToolUse can block, modify, allow. PostToolUse can validate, transform, record
 		- Multi-concert decomposition - parallelize independent concerns only, if concern B need A's output - use sequential
+part - 6 
+	- domain 1 - task 1.5 - sdk hooks & data normalization
+		- transform messy tool data and enforce business policies with code
+	- five tools five different formats
+		- order system - "created_at": "1710633600" (unix timestamp)
+		- customer system - "signup_date": "2025-04-01T10:00:00Z" (iso format)
+		- shipping api - "ship_date": "03/17/2025" (US date format)
+		- legacy database - "status": "200" (numeric status code)
+		- modern api - "status": "active" (string status label)
+		* claude has to interpret these values itself and usually it gets it right, but to enforce it you need to use hooks
+	- what is data normalization
+		- normalization means converting different formats into one format before claude sees them
+	- why not just tell claude to use one format
+		- prompt instructions are probabilistic, not deterministic, even 1% failure can cause problems
+		- hook run after every tool call, works every time
+	- transforming data after tool execution
+		- claude calls get_order
+		- tool returns raw data
+		- PostToolUse converts unix timestamp into iso format, maps 200 status to "active"
+		- claude receives clean result
+	- transforming data before tool execution
+		- claude calls process_refund(amount=$750)
+		- PreToolUse hook intercept - it checks if amount > $500
+		- blocks the tool execution - redirects to escalate_to_manager with full context
+		- claude tells customer "escalated to a manager"
+	- hooks vs prompts
+		- hooks - deterministic
+		- prompts - probabilistic
+		- "guarantee" or "ensure" - use hooks, "encourage" or "prefer" - use prompts
+		- examples when to use hooks - financial limits, data format requirements, compliance polices, acl
+	- 5 anti-patterns
+		- relying on prompts for data consistency - claude misinterprets unix timestamps, use hooks
+		- blocking calls with no explanation - claude retries endlessly, always return clear message and alternative action
+		- silently modifying data in hooks - debugging becomes impossible, always log all transformations and keep originals
+		- using hooks for soft preferences - adds latency, reserve them for hard rules only
+		- no redirect on blocked calls - claude will get stuck, always provide alternative - escalation, different tool, human handoff
+	- 7 things to know
+		- PostToolUse hooks normalize data into consistent formats
+		- PreToolUse hooks block policy-violating calls 
+		- hooks are deterministic, prompts are probabilistic (1-5% failure)
+		- always explain why call was blocked
+		- normalization targets - unix to iso, numeric to string statuses, regional to standard dates
+		- keep hooks fast - they run on every tool call, no network calls
+		- "guarantee compliance" answer is always hooks, not prompts
+		
