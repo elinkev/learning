@@ -361,3 +361,57 @@ part - 8
 		- fork_session - creates session branches from shared analysis baseline, use this to compare strategies in parallel
 		- start fresh when code changed significancy, context is exhausted, or taking new direction
 		- session management is all about preserving valuable analysis while avoiding stale context
+part - 9
+	- domain 2 - tool design & mcp integration
+		- domain 1 is about how agents think and orchestrate
+		- domain 2 is about how agents act - the tools they use
+	- domain 2 - five tasks
+		- task 2.1 - tool interfaces
+		- task 2.2 - structured error responses
+		- task 2.3 - tool distribution
+		- task 2.4 - mcp servers
+		- task 2.5 - built-in tools
+	- task 2.1 - descriptions are everything
+		- tools are descriptions, claude does not read its implementation
+	- the misrouting problem
+		- if the description of the tool is vague, claude has a chance to not pick it
+		- example: get_customer ("retrieves customer info") and lookup_order ("retrieves order details"), prompt - "check my order #1234", claude picks get_customer
+	- five elements of a good description
+		- purpose - what does this tool do
+		- input format - what should the input look like, include examples
+		- output - what comes back
+		- when to use - in what situation should claude use this tool
+		- boundary - when should claude not use this tool 
+	- bad vs good description
+		- bad - name: analyze_content, desc: analyzes content, input: url: string
+		- good - name: extract_web_result, desc: extracts structured data from web pages. Input: valid HTTPS url, Output: title, text, date. input: url: string
+		- good description includes detailed explanation, examples, and where to not use this till
+	- split generic into specific
+		- analyze_document - could mean extract data, summarize, verify
+		- it would be better to split such tool and use specific ones
+		- extract_data_points, summarize_content, verify_claim_against_source
+	- the system prompt keyword trap
+		- system prompt "always analyze customer requests carefully"
+		- two tools available analyze_content (analyzes content from url), lookup_order (retrieves order details by order id)
+		- user prompt "whats the status of oder #123?"
+		- claude picks analyze_content tool because of the word "analyze" in the system prompt
+		- the fix - rename analyze_content to extract_web_content
+		* system prompt names should not match tool names, it may cause claude to pick this tool 
+	- tool naming strategies
+		- action + object - extract_data_points
+		- verb + scope - search_web_articles
+		- domain-prefixed - billing_lookup_invoice
+		* avoid generic verbs like process, handle, do
+	- 5 anti-patterns
+		- minimal descriptions - tool descriptions should include purpose, inputs, outputs, when to use
+		- overlapping descriptions - each tool must have unique description, otherwise claude can pick any of such tools
+		- generic tool names
+		- system prompt keyword collisions - tool names should not match system prompt words
+		- missing boundary conditions - state when not to use the tool, example - not for PDFs
+	- 6 things to know
+		- tool description is the primary mechanism how claude chooses the tool
+		- five primary elements for tool description - purpose, input format, output, when to use, when not to use
+		- split generic tools to specific tools
+		- renaming ambiguous tools - dont chose generic names
+		- system prompt keywords can make claude pick tools just by keyword matches
+		- when exam shows misrouting problem - improve the description first
