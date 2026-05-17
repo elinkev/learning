@@ -313,3 +313,51 @@ part - 7
 		- attention dilution - LLMs pay less attention for content thats not in beginning or end of context
 		- adaptive plans add, remove, reorder steps based on findings
 		- chaining is cheaper, dynamic decomposition costs more
+part - 8
+	- domain 1 - task 1.7 - session
+		- session - named, persistent record of conversation that you can return to later, all tool results are saved
+	- why session matters
+		- day 1 - analyze the codebase, claude builds mental model, identifies critical paths
+		- day 2 - write tests based on what was found, claude already knows critical paths so no need to re-analyze again
+		- day 3 - fix the bugs that the tests revealed, claude prior context is there, no need to re-explain everything again
+	- named session flags
+		- --session <name> (claude --session auth-refactor)
+		- --resume (claude --resume auth-refactor)
+	- when to resume and when to start fresh
+		- resume - if the code didnt change, and still doing analysis 
+		- resume with caution - if code changed between sessions
+		- start fresh - context window mostly exhausted, or exploring new approach
+	- stale context problem
+		- when u resume a session, old tool results are still there, but files may have changed
+		- solution 1 - after resuming the session, tell claude what was changed, works best if only few files were changed
+		- solution 2 - start fresh with injected summary, ask claude to confirm or revise those findings on current codebase
+	- fork_session - branch at decision point
+		- fork_session - makes a branch of current session
+		- can be used in parallel, useful to find multiple solutions for a problem then choose the best approach
+		- each fork gets complete full history copy 
+		- changes in fork A have no effect for fork B
+		- forks run in parallel
+		- original session remains unchanged, forking is non-destructive
+	- when to use fork_session
+		- comparing two refactoring strategies before committing
+		- testing different testing approaches - unit vs integration focused
+		- exploring alternative architectures after shared analysis without losing progress
+		- never fork for simple linear tasks
+	- session decision framework
+		- if the code hasn't changed - resume
+		- if the code has changed but context window is not exhausted - resume with caution
+		- if the code has changed but context window is exhausted - start fresh
+	- 5 anti-patterns
+		- resuming code when files were heavily modified - you should start fresh or tell claude explicitly what changed
+		- starting fresh when context is still valid - resume instead
+		- never using named sessions - you lose all progress when terminal is closed
+		- forking for simple linear tasks - only use forks when comparing alternatives in parallel
+		- resuming with exhausted context - start fresh with injected concise summary of key findings
+	- 7 things to know
+		- --resume - resumes named session with full conversation history
+		- stale context is biggest risk of resumption
+		- mitigation 1: inform the resumed session about specific changes
+		- mitigation 2: start a fresh session and inject a structured summary of prior key findings
+		- fork_session - creates session branches from shared analysis baseline, use this to compare strategies in parallel
+		- start fresh when code changed significancy, context is exhausted, or taking new direction
+		- session management is all about preserving valuable analysis while avoiding stale context
