@@ -415,3 +415,45 @@ part - 9
 		- renaming ambiguous tools - dont chose generic names
 		- system prompt keywords can make claude pick tools just by keyword matches
 		- when exam shows misrouting problem - improve the description first
+part - 10
+	- domain 2 - task 2.2 - structured error responses for mcp tool
+		- when a tool fails, it should return a structured response, not just text
+		- example - "errorCategory": "transient", "isRetryable": true, "suggestion": "retry in 2 seconds"
+	- the isError flag
+		- this is a signal layer
+		- when this flag is returned as true, claude know that its an error report, not success data
+		- "type": "tool_result", "tool_use_id": "tool_891", "is_error": true, "content": "..."
+		- without a structured body, claude guesses the recovery action
+		- structured error body is decision layer
+	- 4 error categories
+		- transient - timeout, service down, agent waits and retries
+		- validation - invalid input, agent fix the input and retry
+		- business - policy volation, agent explains to user why it wont execute this tool
+		- permision - unautharized access, escalates to user
+	- 5 structured error fields
+		- errorCategory - names failure type (transient, validation, business, permission)
+		- isRetryable - true/false
+		- message - technical detail for logging, not shown to user
+		- customerMessage - what to tell the user, business errors only - must be polished and user friendly
+		- suggestion - next action for the agent: retry, escalate to human, ask for correct input
+	- access faiilures vs valid empty results
+		- search_orders("1234) - tool call
+		- isError: true, errorCategory: "transient", message: "DB connection timeout" - claude retries the call
+		- isError: false, orders: [], total: 0 - claude tells user "you have no orders"
+	- local recovery in subagents
+		- local recovery - each subagent tries to handle error itself, if all attempts fail - it returns a structured error response to the coordinator
+		- subagent should - retry locally, report with results and alternatives before escalating
+		- subagent calls search_web("something") -> gets timeout -> retries locally 1 time -> if sucess returns result to coordinator, if not escalates with context
+	- 5 anti-patterns 
+		- generic errors - include errorCategory, isRetryable, suggestion
+		- returning empty results for failures - an empty array tells the user that nothing exists when in reality it was timeout error
+		- retrying business rule violations - set business rule violations as isRetryable: false
+		- propagate all errors to the coordinator - handle transient errors locally in subagents
+		- no partial results in error reports - always include what was attempted and alternatives exist
+	- 6 things to know
+		- 4 error categories - transient, validation, business, permission
+		- 5 structure error fields - errorCategory, isRetryable, message, customerMessage, suggestion
+		- access failures vs empty results
+		- local recovery for subagent transient errors
+		- isRetryable: false on business violations prevent wasted max_tokens
+		- escalation reports - always include partial results and alternatives in escalation reports
