@@ -457,3 +457,40 @@ part - 10
 		- local recovery for subagent transient errors
 		- isRetryable: false on business violations prevent wasted max_tokens
 		- escalation reports - always include partial results and alternatives in escalation reports
+part - 11
+	- domain 2 - task 2.3 - tool distribution
+	- too many tools problem
+		- giving too many tools to agent degrades tol selection reliability
+		- 4-5 tools is the optimal amount of tools per agent
+	- scoped tool access
+		- each agent should only get tools that it needs
+		- instead of assigning a lot of tools to one subagent, make more specific subagents
+	- cross-role tools
+		- sometimes subagent needs access to a tool from another domain
+		- instead of calling coordinator, making coordinator spawn another agent, then returning result to original subagent, create scoped cross-role tool
+		- "name": "verify_fact", "description": ()"quick verification of simple facts: dates, names, statistics", "only use for simple facts", "for complex research return control to coordinator")
+		- simple fact checking is handled locally by agent
+	- 3 tool_choices modules
+		- auto - claude may call a tool or return plain text, claude decides what fits best
+		- any - claude must always call some tool, used when structured output is needed
+		- forced - claude must call this specific named tool, used in ordered pipelines
+	- forced tool selection in ordered pipelines
+		- step 1 - forced tool to extract metadata
+		- step 2 - auto tool, claude decides what to do with the extracted metadata 
+	- constrained alternatives
+		- fetch_url - fetches any url from internet
+		- load_document - fetches document from approved domain only
+		* same concept but narrower scope
+	- 5 anti-patterns
+		- every agent gets all tools - maximizes decision complexity
+		- 18 tools per agent - reliability drops when agent has more than 4-5 tools	
+		- no cross-role tools at all - forces expensive roundtrip with the coordinator for simple operations
+		- auto for output - using "auto" when structured output is required, claude may return text. Use "any" to guarantee a tool call
+		- generic tools - broad tools like fetch_url, replace them with alternatives with limited scope
+	- 6 things to know
+		- too many tools degrade reliability, aim for 4-5 tools per subagent
+		- scoped access - each subagent only gets the tools they need for their role
+		- cross-role tools are the exception, they are for high-frequence operations that would otherwise require roundrips with coordinator
+		- tool_choice - auto (claude decides), any (must call any tool), forced (must call specific tool)
+		- forced tool selection ensures a specific tool runs first, used for ordered pipelines
+		- replace generic tools with constrained alternatives that limit scope (fetch_url vs load_document)
