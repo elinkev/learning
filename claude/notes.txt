@@ -494,3 +494,50 @@ part - 11
 		- tool_choice - auto (claude decides), any (must call any tool), forced (must call specific tool)
 		- forced tool selection ensures a specific tool runs first, used for ordered pipelines
 		- replace generic tools with constrained alternatives that limit scope (fetch_url vs load_document)
+part - 12
+	- domain 2 - task 2.4 - mcp server integration
+	- what is mcp
+		- mcp - model context protocol
+		- lets claude connect to external services through a uniform interface
+		- mcp standardizes the interface
+		- provides tools (callable functions), resources (read-only catalogs), prompts (templates)
+		- claude discovers all tools simultaneously on connection
+	- mcp tool vs regular tool
+		- regular tools defined by regular json schemas in your code and executed in your code
+		- mcp server tools are defined and executed at the server
+		- when claude connects to mcp server, all tools from that mcp are available at once
+	- project-level vs user-level config (mcp configuration for team or personal)
+		- project level config lives at project root (.mcp.json)
+		- this file is commited and shared
+		- user level lives in home directory (~/.claude.json)
+	- mcp server config environment variable expansion
+		- tokens/keys are never hardcoded in json files
+		- ${GITHUB_TOKEN} - tells to take the token from developers shell environment
+	- mcp resources (catalogs)
+		- mcps can expose resources - issue_catagories
+		- these catalogs give agents visibility for whats availble before its start acting
+		- example whats expiosed - issue summaries, database schemas, documentation outlines, report types
+	- community servers vs custom servers
+		- community servers cover standard integrations - jira/github/slack
+		- custom servers - built when its unique workflow and no community option coverts it - deployment pipeline, crm connector, legacy system integration
+		- use community servers first, only build custom servers when no other options
+	- enhancing mcp tool descriptions
+		- community servers sometimes have weak descriptions
+		- you can add tool preference guidance to CLAUDE.md
+		- example - MCP - codebase_search (search codebase)
+		- example - Built-in tool - grep (a powerful search tool built on ripgrep, supports full regex syntax)
+		- example - claude picks grep because it has better description
+		- fix - add "when searching for code patterns, prefer codebase_search mcp tool over grep" to CLAUDE.md
+	- 5 anti-patterns
+		- hardcoded secrets in .mcp.json - use ${token}
+		- buildint custom servers for standard integrations - use community servers
+		- no resources for content catalogs - agents will keep repeatedly explore tool calls to discover whats available. Expose issue sumaries, schemas, categories as resources
+		- shared config at user level - for team based configs they need to be in project root, not ~/.claude.json 
+		- minimal mcp tool description - fix the description by modifying CLAUDE.md, not the mcp itself
+	- 6 things to know
+		- shared vs user level configs - .mcp.json - commited, ~/.claude.json - user stored
+		- ${token} - keep actual keys out of config files
+		- claude discovers all mcp tools simultaneously at connection
+		- mcp resources are read-only catalogs - issue summaries, database schemas, documentation outlines
+		- build custom mcp servers when no community ones exist
+		- enhance mcp descriptions by modifying CLAUDE.md, not mcp directly
