@@ -541,3 +541,47 @@ part - 12
 		- mcp resources are read-only catalogs - issue summaries, database schemas, documentation outlines
 		- build custom mcp servers when no community ones exist
 		- enhance mcp descriptions by modifying CLAUDE.md, not mcp directly
+part 13
+	- domain 2 - task 2.5 - 6 built in tools
+		- grep - search file contents
+		- glob - find files by name / path pattern
+		- read - load full file contents
+		- write - create or completely overwrite a file
+		- edit - targeted text replacement in existing file
+		- bash - run shell commands
+	- glob vs grep
+		- glob - searches file names/paths - pattern **/*.test.php
+		- grep searches file contents - pattern some_function()
+	- two phase search strategy - grep then read
+		- phase 1 - grep - find entry points (finds multiple files containing your phrase)
+		- phase 2 - read - understand the found files
+	- edit vs write
+		- edit - makes a targeted text replacement, you provide a string and it changes the other string, used for replacing parcial parts
+		- write - replaces entire file with new content, used to create new files or complete rewrites
+		* when using edit, the haystack string must be unique, if theres multiple choices - provide additional content until its unique
+	- read + write
+		- when edit failes (cant find unique haystack) - use read + write
+		- read the entire file
+		- modify the edit mentally
+		- write output the modified version
+		* exam tests whats the fallback when edit fails
+	- incremental exploration
+		- dont read entire codebase
+		- grep for entry point
+		- read the route file
+		- read the specific handler
+		- read the billing service
+		- in other words - only read stuff that matters, this manages the context window efficiently, this is called incremental exploration
+	- 5 anti-patterns
+		- reading all files upfront - this fills context window with irrelevent files, start with grep to find entry points, then read selectivly
+		- using grep to find file names - use glob
+		- using write to modify one line - use edit for small changes
+		- using edit on non-unique match - include more surrounding context or fallback to read + write strategy
+		- using bash for file search - built in grep and glob are more optimal
+	- 6 things to know
+		- grep searches file contents, glob searches file names and paths
+		- search strategy - grep first, then read 
+		- edit for targeted changes require unique match, write for new files or complete rewrides
+		- edit fails on non-unique match - use fallback - read + write
+		- incremental exploration - follow imports and functions calls step by step - dont read entire codebase
+		- bash is for build, test, install, git - not for filesearch, use built in grep and glob tools
