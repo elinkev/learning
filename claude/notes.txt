@@ -622,3 +622,38 @@ part 14
 		- split monolithic claude.md files to small file with imports/rules
 		- use /memory to verify that claude is loading your rules
 		- team member missing conventions - check if config is at user-level instead of project-level
+part 15
+	- domain 3 - task 3.2 - slash commands & skills
+		- claude can be extended with custom slash commands
+		- .claude/commands/ - markdown files that any user can run
+		- .claude/skills/ SKILLS.md file - configures permissions, isolation, input hints
+		- command - keyboard shortcut
+		- skills - plugin 
+	- custom slash commands
+		- can be personal or team commands - same scoping as claude.md
+		- .claude/commands - team
+		- ~/.claude/commands - personal
+		- .claude/commands/review.md - can use /review - claude reads the md file and executes whats written there
+	- skills with yaml formatter
+		- more poverfull than commands
+		- context: fork - run isolated sub-agent
+		- allowed-tools - which tools to give to the agent (grep, glob)
+		- argument-hint - ask the user for input (which file path)
+		- context: fork - doesnt polute main conversation, only receives the result - use when exploring, analysis, codebase scanning, brainstorming
+		- allowed-tools - least applied principle - if skill is only for analysis, no need to have write/edit tools, restrict it to only read/grep/glob
+	- skills vs claude.md
+		- claude.md - always loaded automatically, used for universal standard (never commit secrets to git, write tests before implementation)
+		- skills - on-demand, used when explicitly invokde (review/analyze/deploy-check)
+	- 5 anti-patterns
+		- team commands at user level - know personal vs project level
+		- skills without fork context - verbose output will fill the main conversation, use isolated sub-agent with fork
+		- skills for full tool access for read only tasks - use allowed-tools to restrict/protect from executing unwanted tools
+		- universal sdandard as skill - if something needs to be run always - use claude.md, if something needs to be run sometimes - use skills 
+		- user skills with same name as project skills - project level will override user level - use different name to avoid this collision
+	- 6 things to know
+		- commands - user vs project scope 
+		- skills support with yaml formatter, context:fork, allowed-tools, argument-hint
+		- content: fork - isolates skill in sub-agent
+		- allowed-tools - restricts tool access
+		- skills are on-demand, claude.md always loaded - universal standards stay in claude.md, tasks worflows go in skills
+		- personal skill variants must have different name to avoid overriding team skills
