@@ -585,3 +585,40 @@ part 13
 		- edit fails on non-unique match - use fallback - read + write
 		- incremental exploration - follow imports and functions calls step by step - dont read entire codebase
 		- bash is for build, test, install, git - not for filesearch, use built in grep and glob tools
+part 14
+	- domain 3 - task 3.1 - claude.md hierarchy
+		- claude.md gives claude specific instructions
+		- every time claude strarts a session it reads claude.md file
+		- it exists at three level scopes - subdirectory, project, user level
+	- three level hierarchy
+		- (lowest tier) ~/.claude/CLAUDE.md - user level, not shared, applies to all projects
+		- (mid tier) .claude/CLAUDE.md or ./CLAUDE.md - project level, used for team standardizes
+		- (highest tier) packages/billing/CLAUDE.md - most specific, overrides eevrything below it, shared via git
+	- the @import syntax for large CLAUDE.md files
+		- the root CLAUDE.md uses @import (@import ./standards/testing.md)
+		- keeps the root file at ~50 lines
+		- this is known as a modular organization pattern
+	- auto-loaded rule files
+		- .claude/rules directory 
+		- files in this directory are automatically loaded as additional instructions - no @import needed
+		- support yaml format
+	- splitting a monolithic CLAUDE.md
+		- split large files into either imports or rules - testing, deployment, code-style etc
+		- root file should be small
+	- diagnosing configuration with /memory command
+		- /memory - check what configuration files are loaded in current session
+		- example - shows user-level, project-level, rules
+	- 5 anti-patterns
+		- massive monolithic claude.md file - split it with imports or rules
+		- team conventions at user level config - other team members wont get them, put them at project-level
+		- personal prefs at project-level - personal preferences belong in ~/.claude/CLAUDE.md - not commited
+		- no modular organization - use imports or rules
+		- not checking /memory when claude ignores rules - verify that claude sees the config
+	- 7 things to know
+		- three config levels - user, project, subdirectory
+		- priority tiers - subdirectory > project > user
+		- add @import external md files to keep claude.md small and readable 
+		- .claude/rules/ - directory holds rules and no imports needed, this is loaded automatically
+		- split monolithic claude.md files to small file with imports/rules
+		- use /memory to verify that claude is loading your rules
+		- team member missing conventions - check if config is at user-level instead of project-level
