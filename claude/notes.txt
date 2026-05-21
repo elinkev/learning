@@ -689,3 +689,41 @@ part 16
 		- path-specific rules beat subdirectory claude.md for cross-cutting concerns (tests spread everywhere, would need to create a lot of claude.md files)
 		- token saving - only load relevant conventions by narrowing path scope
 		- maintaining conventions for files spread across many directories - use path-specific rules, not subdirectory claude.md files
+part 17
+	- domain 3 - task 3.4 - when to use plan mode vs direct execution
+		- direct execution - claude reads your request and immediately executes changes
+		- plan mode - claude explores codebase, proposes a plan, waits for approval
+	- 4 signals for plan mode
+		- multiple valid approaches - explore the options before committing
+		- large scope - mistakes mid-way may require costly undo work, plan before committing
+		- architectural decisions - choosing between integrations
+		- risk of expensive rework - picking the wrong approach may cause undoing
+	- microservices restructuring
+		- without plan mode - claude would start splitting files immediately, discover dependency problems halfway through, costly rework and lost progress
+		- with plan mode - claude first maps the code, maps dependencies, proposes a plan, you review and adjust, then commit
+		- key difference is human review 
+	- 4 signals for direct execution
+		- well-defined change - add input validation to this function
+		- single file or small scope - bug fix with clear stack trace
+		- no architectural decision - add a date validation conditional
+		- known approach - convert this callback to async
+		- if youcan describe the change in one sentence and theres only one way to do it - use direct execution
+	- the explore subagent in plan mode
+		- the explore subagent reads files in isolation, keeps verbose output out of the main conversation
+		- without this subagent it would consume context before implementation even starts
+	- combining plan mode and direct execution
+		- first use plan mode to create a plan
+		- then execute by planned and reviewed steps
+	- 5 anti-patterns
+		- using direct execution on architectural change - use plan mode
+		- using plan mode on a single file bufxi - unnecessary overahead, scope is already clear
+		- starting over when complexity is found - start with plan mode when complexity is suspected
+		- plan mode without reviewing the plan - the checkpoint is the whole point of plan mode, review it before committing
+		- skipoping explore subagent - main context fills with verbose output from discovery, use explore agent to isolate investigation output
+	- 6 things to know
+		- plan mode - architectural changes, multi-files changes, multiple approaches, migrations
+		- direct execution - single file changes, simple bug fixes, known approaches
+		- explore subagent runs in isolation when investigating, only clean output returns back to main context
+		- combine both modes, first plan, then review, then execute
+		- when exam describes monolith-to-microservice or a large migration - use plan mode, adding a simple validation - direct execution
+		- plan modes value is in the human review checkpoint - always review the plan and adjust if needed
