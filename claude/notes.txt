@@ -657,3 +657,35 @@ part 15
 		- allowed-tools - restricts tool access
 		- skills are on-demand, claude.md always loaded - universal standards stay in claude.md, tasks worflows go in skills
 		- personal skill variants must have different name to avoid overriding team skills
+part 16
+	- domain 3 - task 3.3 - path specific rules
+	- one-size-fits-all rules
+		- scenario - large code base, a lot of rules exist in claude.md (react conventions, api validation rules, database patternts etc), editing button.tsx - all rules still get loaded
+		- this creates 3 problems: wasted tokens by consuming irrelevant tools, irrelevant guidance (may apply database tool when using react), non-deterministic - claude guesses what to use
+	- ,claude/rules/ with path formatter
+		- at the top of the md fule, add yaml path for files that should use this rule
+		- this makes the rule only load when specific file matches the glob path
+		- example - paths: - "src/api/**/*
+		- this is key advantage of having rules instead of adding eveyrthing to claude.md
+	- glob pattern routing
+		- path: ["**/*.test*] - all test files any directory any extensions
+		- path: ["src/api/**/*] - all files in the api directory
+		- path: ["**/*.tsx"] - all react components
+		- path: ["terraform/**/*] - any terraform files in report
+		- paths: - "src/api/**/*" - "src/middleware/**/* - multi pattern
+	- paths vs sudirectory claudem.md files
+		- .claude.md applies to all files inside that directory and its subdirectories
+		- path-specific rule applies to any file regardless of where it lives in the tree
+		- claude.md - location-bound, directory scope
+		- rules - pattern-bound, cross directory
+	- 4 anti-patterns
+		- using subdirectory claude.md for cross-cutting concerns - its inefficient to put claude.md files in every directory - use path specific rules
+		- no paths field in rules file - without path field rules always loaded, use path to scope the rule
+		- overly broad glob patterns - be specifc
+		- relying on claude to infer which section applies - use paths
+	- 5 things to know
+		- .claude/rules/ files with a path enable conditional convention loading
+		- glob patterns control when rules load 
+		- path-specific rules beat subdirectory claude.md for cross-cutting concerns (tests spread everywhere, would need to create a lot of claude.md files)
+		- token saving - only load relevant conventions by narrowing path scope
+		- maintaining conventions for files spread across many directories - use path-specific rules, not subdirectory claude.md files
