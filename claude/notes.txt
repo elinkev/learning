@@ -727,3 +727,43 @@ part 17
 		- combine both modes, first plan, then review, then execute
 		- when exam describes monolith-to-microservice or a large migration - use plan mode, adding a simple validation - direct execution
 		- plan modes value is in the human review checkpoint - always review the plan and adjust if needed
+part 18
+	- domain 3 - task 3.5 - iterative refinement
+	- what is iterative refinement
+		- scenario - "convert dates to iso, normalize names, extract first email"
+		- claude interprets each instruction differently
+		- slightly different results each time
+		- scenario - "show 3 inputs labeled 'this is what i want' and 3 labels 'this is not what i want' 
+		- claude remembers the transformation rule from patterns
+		- consistent results on each run
+	- concrete input/output examples
+		- vague prompt - "extract and normalize contact information from documents"
+		- this is vague because claude guesses things like - format, how to handle missing fields
+		- concrete prompt - "input: "Contact John Smith at something@example.com, output: {"name": John Smith, "email": something@example.com}"
+		- this prompt gives exact format that you want
+	- test-driven iteration
+		- write test first
+		- ask claude to implementation
+		- share failed tests
+		- ask claude to fix
+		- this gives claude specific feedback what to implement
+	- the interview pattern
+		- before implementing a solution in unknown codebase, you ask claude to interview you
+	- sequential vs parallel fixes
+		- interacting issue - fix together
+		- example for interacting issue - change function to instead of accepting string value, it now accepts null|string, need to fix all places that call this function
+		- independent issue - fix sequentially
+		- example for independent issue - error handling, unused imports
+		* ask yourself whether fixing issue A changes the behavior of issue B, if yes - fix together, if no - fix sequentially
+	- 5 anti-patterns
+		- only using descriptions - provide 2-3 concrete input/output examples
+		- implementing without tests - write tests first, then iterate using failures
+		- fixing interacting issues one at the time - address interacting issues in one pass
+		- skipping interview pattern in unknown codebases - ask claude to interview you
+		- vague error reports - share tests failures with expected results 
+	- 5 things to know
+		- concrete input/output examples are more effective than prose descriptions
+		- test-driven iteration - write tests first, run, then iterate failures until pass
+		- interview pattern - tell claude ask questions before committing in unfamiliar domains
+		- interacting issues - must be fixed in one message
+		- specific tests cases - most efficient way to handle edge cases
