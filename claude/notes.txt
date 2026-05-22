@@ -767,3 +767,39 @@ part 18
 		- interview pattern - tell claude ask questions before committing in unfamiliar domains
 		- interacting issues - must be fixed in one message
 		- specific tests cases - most efficient way to handle edge cases
+part 19
+	- domain 3 - task 3.6 -  ci/cd integration
+	- what is ci/cd
+		- automated pipeline that runs every time code changes
+		- claude runs as automated worker in your pipeline, can review pull requests
+		- it can be done with the -p flag
+	- the -p flag (--print)
+		- this makes claude run non interactively
+		- it processes the prompt, outputs the result to stdout and exist
+		- example - claude -p "analyze this pr for security issues" - this will run, print output, exit
+	- --output-format json
+		- tells claude to return structured json
+		- you can tell which schema to use by adding --json-schema
+		- example - claude -p --output-format json \ --json-schema '{"type":"object", "properties" ...}' \ "review changed files"
+	- CLAUDE.md as CI context
+		- when claude runs in ci, it reads projects claude.md file just as interactive session
+		- can add review standards like handle error handling as high 
+	- session context isolation
+		- the session that wrote the code is less effective to review the code than a new session
+		- ci based reviews start from clean session, far more likely to catch issues
+	- avoiding duplicate findings
+		- include prior findings, only report new findings
+	- 6 anti-patterns
+		- running claude -p in ci/cd - without the -p flag it runs as interactive session, doesnt exit
+		- reviewing code in same session where the code was written - claude will be biased, likely wont catch issues
+		- no prior findings in re-reviews - include prior findings, report only new issues
+		- no CLAUDE.md for CI context - document review criteria in CLAUDE.md
+		- text output in CI - use --output-format json
+		- not providing existing tests while generating new ones - include existing test files in context
+	- 6 things to know
+		- -p flag runs claude non interactively
+		- --output-format json - produces structured json response
+		- claude.md provide consistent context for both interactive and non interactive sessions
+		- session isolation - always review in new session
+		- include prior findings to re-reviews to prevent duplicates
+		- include existing tests when generating new ones to avoid duplicate coverage
