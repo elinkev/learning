@@ -832,3 +832,45 @@ part 20
 		- concrete code examples for each severity level
 		- define what to skip as explicitly as what to report
 		- high false positive rates destroy trust across all categories - disable problematic categories and improve them before re-enabling
+part 21
+	- domain 4 - task 4.2 - few-shot prompting
+		- this is about including 2 to 4 example input and output pairs in your prompt so claude sees the pattern before processing new data
+		- why not just instructions - instructions can sometimes fail capture ambiguous edge cases, few-shot examples show claude how to handle things that hard to describe in words
+		- useful when instructions alone produce inconsistent results
+	- instructions vs examples
+		- vague instruction - "check ony my order" - claude guesses get_customer? lookup_order? search_orders? - instructions doesnt clarify
+		- few-shot - "check order #1234" -> lookup_order(1234), "check on my order" -> get_customer() first, "orders for john@example.com" -> "get_customer(email="..") - claude learns the patterns
+	- force consistent output
+		- instructions - "return findings in json with location, issue, severity and suggest fix" - sometimes fields are missing, claude decides how to handle
+		- few-shot - "example finding: {"location": "src/auth.ts:45", "issue": "some error" ...}" - claude always returns output that matches this json
+	- ambiguous case resolution
+		- this is used when correct action is non-obvious, like code-reviews
+		- you can teach claude what to flag and what to skip
+		- example - acceptable (skip) - if (user?.name) (not a bug, chaining is intentional defensive coding)
+		- example - bug (flag) - if (user.name) when user can be null (missing null-check)
+		- example - acceptable (skip) - catch (e) { //skip } (comment indicates intentional empty catch, skip it)
+	- document extraction
+		- when pulling data from documents, examples show how to handle structural differences
+		- example 1 - inline citation - "the study (smith et al. 2024) found 94% accuracy" - source: "smith et al. 2024" type: inline_citation
+		- example 2 - bibliography reference - "according to reference [3], the error rate decreased.." - source: "Johnson, 2024" type: bibliography_source
+		- example 3 - missing field - "revenue decreased by 15% year-over-year" - source: null type: unsourced_claim
+		* example 3 teaches claude to return null for missing fields, instead of fabricating a source
+	- how many examples to use
+		- more examples - more context tokens consumed
+		- 2-3 examples optimal for common tasks
+		- 4-5 examples optimal for ambiguous tasks
+		- 1 example for basic format demonstrations, not enough to teach judgement patterns
+		- 0 (zero-shot) - only when task is completely unambiguous
+	- 5 anti-patterns
+		- not including edge case examples - always include at least one edge case and null example
+		- examples without reasoning - always include why each action was choosing
+		- too many examples (10+) - wasted tokens, 2-4 is enough
+		- examples that all look the same - claude doesnt learn how to differentiate, make examples structurally diverse
+		- relying on instructions for format - show exact output format in examples
+	- 6 things to know
+		- few-shot examples are the most effective technique for consistent output when instructions alone produce inconsistent results
+		- include reasoning - "why this action" - so claude learns the pattern
+		- show edge cases and ambiguous scenarios - this is where few-shot examples add the most value
+		- null and missing field handling - must be demonstrated via examples
+		- 2-4 examples is the sweet spot - cover common cases, edge cases, format
+		- few-shot examples enable generalization to novel patterns
