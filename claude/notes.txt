@@ -803,3 +803,32 @@ part 19
 		- session isolation - always review in new session
 		- include prior findings to re-reviews to prevent duplicates
 		- include existing tests when generating new ones to avoid duplicate coverage
+part 20
+	- domain 4 - task 4.1 - prompt design & explicit criteria
+		- its better to report fewer accurate findings, than many findings with high false positives
+		- need to understand the false positives - system flags something as a problem when it isnt a problem
+	- vague instructions vs explicit criteria
+		- vague - "check that comments are accurate" - claude flags everything that could be inaccurate
+		- explicit - "flag comments ONLY when the comments claimed behavior contradicts the actual code" - claude flags only genuine contradictions
+	- categorical definitions beat subjective thresholds
+		- categorical definition - list of issue types
+		- vague - "only report high-confidence findings" - claude decides what exactly is high-confidence
+		- explicit - "report only these categories:" null pointer dereference, uncaught async error, skip code style, minor naming, missing documentation - structured description
+	- severity criteria with concrete examples
+		- when defining severity levels, provide code examples for each level
+		- critical - data loss or security vulnerability (writing to DB without transaction rollback)
+		- high - functional bug that affects users (returns undefined instead of error object)
+		- medium - code quality issue that may cause future bugs (catching exception broadly)
+		- low - style issue (dont report these, they are handled by linters)
+	- 5 anti-patterns
+		- "be conservative" - this is subjective and it lets claude decide - define explicit categories of what to report
+		- "only high-confidence findings" - again lets claude decide what is high-confidence - list specific issue types with code examples
+		- reporting all possible issues - define what to skip as explicitly what to report
+		- keeping high false positives categories - disable the, improve criteria, re-enable later
+		- no severity examples - provide code examples for each severity level
+	- 5 things to know
+		- explicit criteria outperform vague descriptions every time
+		- categorical definitions (list of issue types) work better than subjective thresholds 
+		- concrete code examples for each severity level
+		- define what to skip as explicitly as what to report
+		- high false positive rates destroy trust across all categories - disable problematic categories and improve them before re-enabling
