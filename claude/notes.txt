@@ -874,3 +874,30 @@ part 21
 		- null and missing field handling - must be demonstrated via examples
 		- 2-4 examples is the sweet spot - cover common cases, edge cases, format
 		- few-shot examples enable generalization to novel patterns
+part 22
+	- domain 4 - task 4.3 - structured output patterns (why asking for json output in a prompt is unreliable)
+	- why not just ask for json
+		- claude decides what structure it should be
+		- the solution is tool_usa with json schema
+	- the tool_use pattern
+		- define an extraction tool - its just a json schema, you tell what field names you want, claude fills in the values
+		- force the tool call with tool_choice - guarantee that claude calls your extraction tool instead of returning plain text
+		- extract the tool call input - structured data lives in response.content[0].input (matching your valid json schema)
+		- this can be used when extracting invoices (you define what fields you want from invoice, claude calls invoice api and uses your tool)
+	- guaranteeing structured output
+		- tool_choice (auto, any, forced) - never use auto for exaction
+	- handling missing information
+		- hallucination - fabricated value when a field is missing, you need to tell claude how to handle missing fields
+		- you can make the fields nullable in your schema
+		- enum with "unclear" and "other" prevents forced misclassification of ambiguous cases
+	- syntax vs semantic errors
+		- syntax error isnt possible with tool_use because api enforces valid json at system level
+		- semantic errors still can happen (valid json with wrong content)
+		- fixing semantic errors are in another step, tool use gives you structure, not correctness
+	- 6 things to know
+		- tool_use with json schemas eliminates syntax errors (api enforces valid json at system level)
+		- tool_choice: "any" - guarantees claude calls a tool instead of returning text
+		- nullable fields prevent hallucination - make fields optional
+		- enum with "unclear" and "other" prevents forced misclassification of ambiguous cases
+		- forced tool selection ensures a specific extract tool runs first when you know the document type
+		- tool use eliminates syntax errors but not semantic errors (values of json can still be wrong)
