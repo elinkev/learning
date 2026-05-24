@@ -889,7 +889,7 @@ part 22
 	- handling missing information
 		- hallucination - fabricated value when a field is missing, you need to tell claude how to handle missing fields
 		- you can make the fields nullable in your schema
-		- enum with "unclear" and "other" prevents forced misclassification of ambiguous cases
+		- enum with "unclear" and "other" - if document doesnt fit your categories, claude can say so instead of guessing
 	- syntax vs semantic errors
 		- syntax error isnt possible with tool_use because api enforces valid json at system level
 		- semantic errors still can happen (valid json with wrong content)
@@ -901,3 +901,46 @@ part 22
 		- enum with "unclear" and "other" prevents forced misclassification of ambiguous cases
 		- forced tool selection ensures a specific extract tool runs first when you know the document type
 		- tool use eliminates syntax errors but not semantic errors (values of json can still be wrong)
+part 23
+	- domain 4 - task 4.4 - validation & retry loops
+	- why validate after extraction
+		- example - json returns invoice with line items, total is 100 but the line item sum doesnt add up - this is a semantic error
+	- retry-with-error-feedback
+		- when validation fails, send original document plus specific errors back to claude for correction
+		- example - extracted = call_extraction_tool(document)
+		- example - errors = validate_extraction(extracted)
+		- example - if errors: retry_response = client.messages.create(tools, tool_choice, messages)
+		- the model sees its own failed attempt AND the specific error, it can self correct because it knows what went wrong
+	- when retries wont help
+		- retry works - format mismatch (extracted 03/11/2020 instead of 2020-03-11)
+		- retry works - structural error (missed line item from invoice)
+		- retry wont work - information absent (document missing data)
+		- retry wont work - external reference (see document B but document B isnt provided)
+	- the detected_pattern field
+		- helps improves extraction system over time
+		- its like a tag on a warning that tells you what kind of issue was flagged
+		- example - {"detected_pattern": "broad-exception-catch"}
+	- self-correction validation for numerical data
+		- schema design - {"stated_total": {"type": "number"}, "calculated_total": {"type": "number"}, "conflict_detected": {"type": "boolean"}}
+		- invoice total is $100, but line items only sum to $92
+		- tool flags the conflict_detect for human review
+	- feedback loop architecture
+		- extract document into structured data
+		- validate the result
+		- if no errors - accept the result
+		- if errors - check if its retryable
+		- if not retryable - accept null / flag for review
+		- if retryable - retry with feedback and re-validate
+	- anti-patterns
+		- retrying when data is absent from the source - the correct approach is check if data is not missing, if it is just return null
+		- retrying without specific errors - always include previous errors when retrying
+		- no detected_pattern field - without this tag, cant analyze false positive trends
+		- only checking structural validity - misses the semantic errors
+		- unlimited retries - max 1-2 retries
+		- not knowing when to retry - retrying when data is missing vs retrying when data was missed or misformatted
+	- 5 things to know
+		- retry-with-error-feedback - include original document, failed extraction, specific errors in the retry prompt
+		- retries only work for structured errors or mismatched format, not for information absence from the source
+		- self-correction - extract stated_total and calculated_total, flag conflicts with conflict_detected boolean
+		- semantic validation (totals match, dates format consistent) is separate from schema validation (json valid)
+		- max 1-2 retries then human review
