@@ -943,4 +943,44 @@ part 23
 		- retries only work for structured errors or mismatched format, not for information absence from the source
 		- self-correction - extract stated_total and calculated_total, flag conflicts with conflict_detected boolean
 		- semantic validation (totals match, dates format consistent) is separate from schema validation (json valid)
-		- max 1-2 retries then human review
+	- max 1-2 retries then human review
+part 24
+	- domain 4 - task 4.5 - batch processing strategies
+	- what is message batch api
+		- theres 2 ways to call claude
+		- synchronous - immedia response, standard cost (chabots, pre-merge checks, perfect for real-time use cases)
+		- message batches - up to 24h latency, 50% cheaper cost (overnight reports, weekly audits, for non-blocking use cases)
+		* need to know which workflow requires which api
+	- critical limitation - no multi-turn tool calling in batch
+		- with synchronous - turn 1 (claude calls get_roder() and returns result) -> turn 2 (claude calls check_paymen() and returns result) -> turn 3 (claude gives final answer)
+		- with barch - request (analyze this document) -> response (complete analysis in one shot)
+		* batch has no tool calls during processing
+	- matching the correct api to workflow
+		- pre-merge code review - its blocking developers cant wait 24hrs - use synchronous
+		- nightly debt report - ready by morning - use batch api
+		- weekly security audit - weekend processing - use batch api
+	- tracking & correlation - using custom_id to track results in batch api
+		- this is like a tracking id
+		- each request includes a custom_id that links the respoonse back to the original document
+		- batch_requests = {"custom_id": "invoice-01", "params": {...}, "custom_id": "invoice-02", "params": {...}}
+		* essential for tracking and identifying failures
+	- failure handling - resubmit only what failed
+		- idenfiy what failed - loop the batch result, check the status, compile a list with custom id and error message
+		- check the error if doc needs modifying (file too long, split the file into chunks) and resubmit the doc
+		* "context_limit" error means file is too long and needs to be split into chunks, other errors can be resubmited as is
+	- cost optimization - refine prompts before large batches
+		- first refine your prompt with synchronous api, check quality, fix prompt issues, continue until quality is acceptable
+		- then switch to batch api
+	- 5 anti-patterns
+		- using batch api for blocking workflows - for real time use synchronous api
+		- resubmiting the entire batch on partial failure - resubmit only the failures by using custom_id
+		- no prompt refining before large batch - test on a sample set first with synchronous api
+		- using batch for multi tool-calling tasks - batch api doesnt support multi tool call, use synchronous for agentic workflows
+		- no custom_id on batch requests - without it, you cant track the documents, always include meaningful custom id
+	- 6 things to know
+		- if someone is waiting for the result - use synchronous
+		- always refine prompt before commiting to large batches
+		- always include custom_id for batch requests
+		- only resubmit only failed batches, not entire batch
+		- batching api doesnt support multi tool calling
+		- batching api is 50% cheaper but has up to 24h latency
