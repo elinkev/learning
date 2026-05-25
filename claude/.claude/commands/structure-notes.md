@@ -56,6 +56,7 @@ Header formats seen in the wild: `part 2 - agentic loops`, `part - 6` (no topic)
 - File: `./docs/notes.json` (overwrite if it exists). Create `docs/` if it does not exist.
 - JSON: 2-space indent, UTF-8, no escaping of unicode (em-dashes etc. stay literal), single trailing newline.
 - `parts[]` sorted by `part` ascending.
+- **Do not pre-format strings.** A PostToolUse hook (`.claude/hooks/normalize_notes.py`) fires after this command's Write and applies whitespace trimming, acronym/proper-noun fix-ups (mcp→MCP, api→API, claude→Claude, etc.), and smart first-letter capitalization to all `topic`, `anti_patterns[].name`, `anti_patterns[].explanation`, and `things_to_know[]` strings. The hook also lints the file and prints any issues to stderr. Your job is faithful transcription — leave casing/whitespace exactly as it appears in `notes.txt` and let the hook handle it.
 
 # Verification (run after writing)
 
