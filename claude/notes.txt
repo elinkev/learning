@@ -986,6 +986,8 @@ part 24
 		- batching api is 50% cheaper but has up to 24h latency
 part 25
 	- domain 4 - task 4.5 - multi-instance review architectures
+		- what catches issues that the code generator is blind to - separate independed instance
+		- how to handle inconsistent review quality - multi-pass review architecture
 	- why self-review doesnt work
 		- claude code is biased on the session where the code was created
 		- need to evaluate the code from a fresh session
