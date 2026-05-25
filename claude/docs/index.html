@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude Certified Architect — study quiz</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header>
+    <h1>Claude Certified Architect — study quiz</h1>
+    <p class="subtitle">Drill anti-patterns, fixes, and "things to know" from <code>notes.json</code>.</p>
+  </header>
+
+  <main>
+    <section id="view-filters" class="view">
+      <h2>Configure session</h2>
+
+      <form id="filter-form">
+        <div class="row">
+          <label for="domain">Domain</label>
+          <select id="domain" name="domain">
+            <option value="all">All domains</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="topic">Topic</label>
+          <select id="topic" name="topic">
+            <option value="all">All topics in domain</option>
+          </select>
+        </div>
+
+        <fieldset class="row">
+          <legend>Modes</legend>
+          <label><input type="checkbox" name="mode" value="apFix" checked> Anti-pattern → fix</label>
+          <label><input type="checkbox" name="mode" value="fixAp" checked> Fix → anti-pattern</label>
+          <label><input type="checkbox" name="mode" value="ttkTopic" checked> Things-to-know → topic</label>
+          <label><input type="checkbox" name="mode" value="flash"> Flashcards (no scoring)</label>
+        </fieldset>
+
+        <div class="row">
+          <label for="count">Question count</label>
+          <select id="count" name="count">
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="all">All available</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <button type="submit" id="start">Start session</button>
+        </div>
+
+        <p id="filter-info" class="info"></p>
+      </form>
+    </section>
+
+    <section id="view-quiz" class="view hidden">
+      <div class="progress" id="progress"></div>
+      <div class="card" id="card"></div>
+      <div class="quiz-actions">
+        <button id="next" type="button" disabled>Next</button>
+        <button id="quit" type="button" class="secondary">Quit session</button>
+      </div>
+    </section>
+
+    <section id="view-summary" class="view hidden">
+      <h2>Session summary</h2>
+      <p id="summary-score" class="score"></p>
+      <div id="summary-misses"></div>
+      <div class="row">
+        <button id="restart" type="button">Back to filters</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Data: <a href="./notes.json">notes.json</a> · generated from <code>notes.txt</code> by the <code>/structure-notes</code> command.</p>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

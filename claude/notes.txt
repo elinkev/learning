@@ -1017,3 +1017,5 @@ part 25
 		- multi-pass architecture - per-file parallel instances + cross-file integration (sequential) + confidence verification
 		- cross-file pass - catches data flow issues, api mismatches, inconsistent patterns
 		- confidence rating - routes high-confidence findings to automation, uncertain ones for human reviews
+
+{"domain": "domain_value", "anti_patterns": {[]}, "summary"}
