@@ -984,3 +984,34 @@ part 24
 		- only resubmit only failed batches, not entire batch
 		- batching api doesnt support multi tool calling
 		- batching api is 50% cheaper but has up to 24h latency
+part 25
+	- domain 4 - task 4.5 - multi-instance review architectures
+	- why self-review doesnt work
+		- claude code is biased on the session where the code was created
+		- need to evaluate the code from a fresh session
+	- attention problem - single pass fails on large preserving
+		- attention dilution - when reviewing a large pull request (14 files) - claude mainly focuses on first and last files
+		- inconsistent depth - some files get detailed feedback, others not so detailed
+		- contradictory findings - flags pattern as problematic in one file, approves in other files
+		- solution - split files into focused passes - per-file local analysis, then cross-file integration and verification
+	- multi-pass architecture - three focused passes
+		- pass 1 - per-file - each file is reviewed with models full attention in parallel, each file is a new instance 
+		- pass 2 - cross-file integration - gather all data from pass 1, pass them into a single instance which focuses on integration issues, data flow, api contract missmatches, missing error propogations
+		- pass 3 - verification pass - optional, rates every finding from 1 to 5, findings rated 4+ get auto posted as pull request comments, 2-3 -> human review, 1 -> discarded
+	- full pipeline 
+		- 14 changed files
+		- pass 1 -> 14 instances review each file
+		- pass 2 -> 1 instance summarizes findings from pass 1
+		- pass 3 -> 1 instance rates findings from pass 2 and posts comments
+	- 5 anti-patterns
+		- using same session to generate and review code - code is biased, use new session
+		- running a single pass for 14+ files - attention delution and inconsistent depth, split into multi-pass
+		- using extended thinking as a substitute for code review - still code is biased, use new session
+		- low confidence (rating) create too many pull request comments - use verification pass to reduce noice
+		- skipping cross-pass entirly - always include it after local passes
+	- 5 things to know
+		- self-review is biased, use separate session for reviews
+		- independed instances per file review catch issues the generator is blind to
+		- multi-pass architecture - per-file parallel instances + cross-file integration (sequential) + confidence verification
+		- cross-file pass - catches data flow issues, api mismatches, inconsistent patterns
+		- confidence rating - routes high-confidence findings to automation, uncertain ones for human reviews
