@@ -1159,3 +1159,48 @@ part 29
 		- /compact command compresses session conversation, use proactively
 		- state persistence enables crash recovery, export manifest files
 		- summarize between phases, inject summary of phase 1 to phase 2 and so on
+part 30
+	- domain 5 - task 5.6 - human review workflows (field extraction from documents)
+		- no ai system is 100% accurate, the goal is to only route cases that actually need human review
+		- confidence callibration determines if issue needs to be resolved locally or handled for human review
+		- if exam asks about accuracy metrics - always validate by document type and field
+		- if exam asks about confidence scores - always calibrate against labeled validation sets before setting up automation
+		- if exam asks about quality monitoring - use stratified sampling to catch difficult document types
+		- if exam asks about review workflow - route by confidence: auto-accept high, human review medium, flag low as failed
+		- if exam asks about systemn improvement - it means human review must be fed back into the loop (recalibration, prompt changes)
+	- field-level confidence scores
+		- vendor_name: {value: "some vendor", confidence: 0.98}
+		- total_amount {value: $1234, confidence: 0.92}
+		- tax_amount: {value: null, confidence 0.6}
+		- category: {value: "unclear", confidence: 0.3}
+		- >= 0.95 - auto accept
+		- 0.5 - 0.95 - flag for human review, uncertain but extractable
+		- > 0.5 - flag as unable to extract
+	- calibration - model confidence is not actual accuracy
+		- step 1 - create a labeled validation set of 100+ documents
+		- step 2 - run the extraction model on all of them
+		- step 3 - compare model confidence to actual accuracy
+		- step 4 - adjust thresholds
+	- ongoing monitoring - stratified random sampling
+		- u have 100 documents, 90 of one type and 10 of other type, random sampling would most likely take always documents from the 90 pool
+		- stratified sampling means taking samples from rare and difficult categories  
+	- full workflow - from extraction to feedback loop
+		- model extract fields with per field confidence scores
+		- routing - high -> auto-accept, medium -> human review, low -> flag as failed
+		- human review - human sees document, extraction, and flagged fields with scores
+		- human correction feeds back into three systems
+		- 1) the final output
+		- 2) calibration data to update threshold
+		- 3) error pattern analysis to improve extraction prompts over time
+	- 5 anti-patterns
+		- relying on aggregate metrics - validate accuracy by document type and field seperately
+		- trusting model confidence without calibration - calibrate thresholds with labeled validation sets
+		- random sampling without stratification - use sampling weighted towards hard or rare types
+		- automating all hiigh-confidence extractions immediately - validate accuracy before automating
+		- no feedback loop from human corrections - use human corrections to update calibration confidence and improve extraction prompts over time
+	- 5 things to know
+		- field-level confidence - each extraction is scored individually, not the whole document
+		- calibrate thresholds - model can be innacurate, need label validation sets
+		- stratified sampling - sample rare/difficult document types, dont pick randomly
+		- route by confidence - auto accept high confidence, human review for medium, flag low as failed
+		- feedback loops - human corrections update calibration and improve prompts over time
