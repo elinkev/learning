@@ -1124,3 +1124,38 @@ part - 28
 		- never terminate on first failure - dont stop entire workflow, use partial results from other subagents and annotate whas failed
 		- coverage annotations in synthesis output (well-supported, partial, gap)
 		- local recovery in subagents for transient errors
+part 29
+	- domain 5 - task 5.4 - large codebase context (investigation)
+		- if exam asks how to keep context clean during code exploration - subagent delegation with scratchpad files
+		- if it tasks about recovery - state persistance
+	- the problem - content degradation in large codebases
+		- when starting a session, in large code bases, claude would give accurate responses while context is still fresh
+		- over time, the context degrades and you will get vague references instead of specific details
+		- this topic is about detecting and preventing context degradataion
+	- solution 1 - scratchpad files, persistent external memory
+		- writing summaries of findings instead of keeping everything in memmory
+		- when context window fills up, agent reads these summaries instead of analyzing the code again
+	- solution 2 - subagent delegation for exploration
+		- instead of doing all exploration in the main agent, delegate the exploration for subagents and summaries their findings
+		- this makes the main agent context window with jest few lines instead of multiple source files
+	- solution 3 - /compact command
+		- compresses hours of discussions
+		- this is a tool to summarize your conversation, use when noticing conversations becoming vague
+	- solution 4 - structured state persistence for crash recovery
+		- for multi-hour investigations, agents should export their findings to a known location so work survives a session crash
+		- on crash, coordinator then loads the manifest, injects it into the new sessions context, and continues where it let off
+	- solution 5 - summarize between phases
+		- when investigation has multiple phases, summarize each phase and spawn a new agent for next phase, pass the summary from previous phase downstream
+	- 5 anti-patterns
+		- reading all files in main agent - delegate to subagents, summarize the findings, main agent should make the decisions, not read source code
+		- no scratchpad for extended investigation - write findings to a file, reference later, this preserves discoveries across context bondries
+		- ignoring context degradation signals - use /compact proactively, deleage to subagents
+		- no state persistance - export structured state to manifest files so work can be recovered
+		- passing raw phase 1 output to phase 2 - summarize phase finding before injecing them to next phases
+	-  6 things to know
+		- context degrades over time, recognise the signal (no specific details)
+		- scrachpad files provide persistent memory, write key findings to files to reference them later
+		- delegate subagents to explore to keep the main agent context clean
+		- /compact command compresses session conversation, use proactively
+		- state persistence enables crash recovery, export manifest files
+		- summarize between phases, inject summary of phase 1 to phase 2 and so on
