@@ -1056,3 +1056,34 @@ part 26
 		- position-aware - summaries at top, section headers, latest mesage at end
 		- require metadata in subagent outputs for downstream citation
 		- complete conversation history for coherence, but trim tool output within that history
+part 27
+	- domain 5 - task 5.2 - escalation & ambiguity resolution
+	- three triggers for escalation
+		- trigger 1 - explicit human request - "i want to speak to a manager"
+		- trigger 2 - policy gap - "can you match this competitors price"
+		- trigger 3 - no progress - multiple approaches tried, non resolved the issue
+	- system prompt design - explicit escalation criteria
+		- instead of simple prompt "escalate complex cases to human agent" (what is complex?) do explicit few shot examples
+		- "escalate when: 1) customer requests a human, 2) refund exceeds $5000, 3) three attempts made with no progress, do not escalate for standard lookups)
+		- in other words - explicitly cover when to escalate and when to not escalate with few shot examples
+	- exam-critical distinction - sentiment vs case complexity
+		- escalate on case complexity, not emotional tone
+		- "where is my package?!" - simple lookup, no need escalate
+		- "can you refund this product?" - needs management approval, escalate
+	- ambiguityresolution - multiple matches - ask, dont guesses
+		- when tool output returns multiple results, agent guesses which one to pick
+		- the correct approach is to ask for additional identifiers, never guess
+	- resolution pattern - acknowledge frustation, then resolved
+		- if the problem is resolvable, first offer a resolution, and only escalte if customer reiterates their preference for a human
+	- 5 anti-patterns
+		- investigating before escalating when a customer asks for a human - escalate immediately on explicit requests
+		- sentiment-based escalation, escalating because customer sounds angry - escalate on policy gaps and capability limits
+		- guessing when multiple customers match - ask for additional identifiers, nevver guess what to select
+		- escalating resolvable issues - resolve autonomasly when within capability
+		- vague escalation criteria - define explicit triggers with few-shot examples, show what to escalate and what not to
+	- 5 things to know
+		- three escalation triggers - ask for human, policy gap, no progress after retries
+		- honor human requests - dont investigate, escalate
+		- sentiment is unreliable - escalate based on case complexity, not emotional tone
+		- multiple matches need clarification - ask for more identifiers
+		- explicit criteria with examples product consistent escalation behavior
