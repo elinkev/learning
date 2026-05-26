@@ -1017,5 +1017,42 @@ part 25
 		- multi-pass architecture - per-file parallel instances + cross-file integration (sequential) + confidence verification
 		- cross-file pass - catches data flow issues, api mismatches, inconsistent patterns
 		- confidence rating - routes high-confidence findings to automation, uncertain ones for human reviews
-
-{"domain": "domain_value", "anti_patterns": {[]}, "summary"}
+part 26
+	- domain 5 - task 5.1 - context management
+		- if exam asks about losing details in long conversation - answer is case facts blocks
+		- if exam asks about wasting context tokens, the answer is trimmping tool outputs
+	- agent forgets context
+		- example -  customer is chatting with aget, by turn 15, agent forgets about the previously discussed order
+		- this happens because context window fills up with irrelevant data
+		- context window is like a desk with stuff on it, when it gets full - you need to remove some stuff
+		- models process information in beginning and end more carefully than the middle part
+	- progressive summarization risks
+		- each prompt gets summarized, but it still can lose critical details (can lose stuff like order id, customer id, custom exact date etc)
+		- numbers, dates, identifiers are vulnerable to summarization loss
+	- persistent structured data - the "case facts" pattern
+		- instead relying on summarization, extract critical facts into strucutred block
+		- this structured data is then included in every prompt
+		- example - case_facts = {"customer_id": "1234", "order_id": "111", "issues": ["order delayed", "refund requested"]}
+	- context budget - trimp verbose tool outputs
+		- tool outputs may give too much uneccesary info, trim in PostToolUse hooks before giving response (only return fields that matter)
+	- strategic placement - position-aware input organization
+		- system prompt - always at the top
+		- case facts summary - critical data, near the top
+		- detailed tool results
+		- latest user message - at the end
+	- downstream citation - require metadata in subagent outputs
+		- when subagents return findings, require metadata alongside content, so downstream agents can cite sources properly
+		- example - {"findings": [{"claim": "some fact", "date": "2020-01-01", "source": "some source"}]}
+	- 5 anti-patterns
+		- progressive summarization of number and dates - extract a structured case facts block and maintain it seperately
+		- including fool tool output with 40+ fields - trim output with PostToolUse hooks of irrelevant data
+		- putting all details in middle of context - place summaries of beggining and use session headers
+		- subagent output without metadata - require date, source, url in structured output if downstream agents need to cite sources
+		- dropping conversation history entirely - pass complete history, trim tool output not the structure
+	- 6 things to know
+		- lost in the middle means beginning and end processed reliably, middle may be overlooked
+		- progressive summarization loses dates, numbers, ids - use case facts blocks
+		- trim tool outputs to relevent fields only (40 fields -> 5 fields)
+		- position-aware - summaries at top, section headers, latest mesage at end
+		- require metadata in subagent outputs for downstream citation
+		- complete conversation history for coherence, but trim tool output within that history
