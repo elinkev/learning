@@ -1087,3 +1087,40 @@ part 27
 		- sentiment is unreliable - escalate based on case complexity, not emotional tone
 		- multiple matches need clarification - ask for more identifiers
 		- explicit criteria with examples product consistent escalation behavior
+part - 28
+	- domain 5 - task 5.3 - error propagation in multi agents
+		- this is all about creating a system that adapts to errors intelligently
+		- single agent systems dont have this problem because when tool fails, you handle it
+		- multi agent systems need to handle error reporting via coordinator for recovery decisions
+	- building blocks - why error quality matters
+		- bad protocol - "there was a problem"  - tells nothing
+		- good protocol - "customer X have requested order Y to be refunded" - has details
+	- structured error content - what a good error report looks like
+		- subagent returns this to coordinator on failure
+		- {"status": "partial_failure", "failure_type": "timeout", "partial_results": [...], "what_was_missed": "could not reach something", "alternative approaches": [...]}
+		- coordinator now needs to decide - retry, use partical results, or note the gap
+		- without detailed error coordinator would just see "search failed"
+	- generic vs structured errors - the difference is actionability
+		- generic - doesnt know partial results exit, doesnt know alternatives
+		- structured - has partial results, alternatives, full context for intelligent recovery
+	- correct approach - graceful degradation, adapt and continue
+		- coordinators job is to proceed with partial results and anotate the missing gaps, dont abort the entire workflow
+	- coverage annotations - annotate whats reliable and what isnt
+		- when a subagent partially fails, the final result needs to be annotated which results are well suported, and which have gaps
+	- local recovery - handle transient errors locally before propagating
+		- before reporting an error to coordinator, try fixing the issue locally first
+		- when failing fixing the issue locally, include how many attempts were tried in the error report
+	- 7 anti-patterns
+		- silent suppression, returning empty response instead of error - distinguish failures from valid empty results, return a structured error with failure type
+		- immediate termination when one sub agent fails - continue with parial results from successfull agents, note which areas failed, partial output better than no output
+		- generic "unavailable" errors - always include structured context like failure type, partial results, alternatives
+		- retuirning empty result as seccuss when an error happened - distinguish valid empty results from errors
+		- terminating workflow on first subagent failure - continue with partial results, annotate what failed
+		- no coverage annotations - always annotate well-supported vs partial vs gap areas
+		- propagating every transient error - handle transient errors locally with retries, dont clutter coordinator context if possible
+	- 5 things to know
+		- when a subagent fails - structured error must include failure type, attempted query, partial results, alternative approach
+		- never silently suppress errors - dont return empty result as a success when an error happened
+		- never terminate on first failure - dont stop entire workflow, use partial results from other subagents and annotate whas failed
+		- coverage annotations in synthesis output (well-supported, partial, gap)
+		- local recovery in subagents for transient errors
