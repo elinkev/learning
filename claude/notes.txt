@@ -1160,7 +1160,7 @@ part 29
 		- state persistence enables crash recovery, export manifest files
 		- summarize between phases, inject summary of phase 1 to phase 2 and so on
 part 30
-	- domain 5 - task 5.6 - human review workflows (field extraction from documents)
+	- domain 5 - task 5.5 - human review workflows (field extraction from documents)
 		- no ai system is 100% accurate, the goal is to only route cases that actually need human review
 		- confidence callibration determines if issue needs to be resolved locally or handled for human review
 		- if exam asks about accuracy metrics - always validate by document type and field
@@ -1204,3 +1204,34 @@ part 30
 		- stratified sampling - sample rare/difficult document types, dont pick randomly
 		- route by confidence - auto accept high confidence, human review for medium, flag low as failed
 		- feedback loops - human corrections update calibration and improve prompts over time
+part 31 
+	- domain 5 - task 5.6 - provenance & uncertainty (report, news, statistics)
+		- if exam asks can a human verify every claim in the final report - if not, provenance was lost somewhere in pipeline
+		- if exam asks what preserves attribution - structured claim-source mappings
+		- if exam asks how to handle conflicts - annotate both values with context
+		- if exam asks about dates - its about including publication date in source metada and showing it in final report
+		- if exam asks about output structure - well-established, contested, gaps
+		- if exam asks about rendering - dont render all reports in one format
+	- the problem - attribution loss during compression
+		- each summarization strips away sorce details
+	- the solution - structured claim0source mappings
+		- every subagent pairts each clain with metadata, this metadata always persists
+	- conflict of sources - annotate the conflict, dont pick a winner
+		- two or more credible sources report different numbers, main agent should present both with context, dont pick just one
+	- temportal data - publication dates
+		- important to preserve source publication dates, final reports without dates will be more accurate
+	- synthesis output - strucure by confidence level
+		- final report should distinguish by ho well-supported each claim is
+		- reader needs to know what is accurate, what is contested, and what has gaps
+	- 5 anti-patterns
+		- summarizing findings without claim source mappings - each subagent should gather and preserve metadata containing url, name, date, excerpt, methodology
+		- choosing one source when multiple sources conflict - annotate conflicts with both values and source context
+		- omitting publication dates - always require publication date in structured output
+		- forcing every content type into the same format - each content type is rendered in its natural format - tables for financial data, prose for news articles, list for technical specs
+		- failing to distinguish well-supported and contested claims - structured output by confidence level - well-established, contested findings, gaps
+	- 5 things to know
+		- claim-source mappings must survive every level of synthasis
+		- conflicting sources - annotate all sources, dont pick one
+		- publication dates turn apparent contradictions into trends, always require them in subagent outputs
+		- synthesis output must distinguish well-established, contested, gap findings
+		- content-type rendering - financial data as tables, news as prose, technical data as lists, dont output everything in one format
