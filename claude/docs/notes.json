@@ -1,0 +1,875 @@
+{
+  "source": {
+    "title": "Claude Certified Architect — study notes",
+    "playlist_url": "https://www.youtube.com/playlist?list=PLFz7SvAnfqLpjPCPJBkUy077BC5ecuE8c",
+    "study_guide_url": "https://claudecertifications.com/claude-certified-architect/study-guide",
+    "generated_from": "notes.txt"
+  },
+  "domains": [
+    {
+      "id": 1,
+      "name": "Agent design & orchestration"
+    },
+    {
+      "id": 2,
+      "name": "Tool design & MCP integration"
+    },
+    {
+      "id": 3,
+      "name": "Configuration & workflows"
+    },
+    {
+      "id": 4,
+      "name": "Prompt engineering for production"
+    }
+  ],
+  "parts": [
+    {
+      "part": 2,
+      "domain": 1,
+      "task": null,
+      "topic": "Agentic loops",
+      "anti_patterns": [
+        {
+          "name": "Text parsing for loop control",
+          "explanation": "Checking literal words like 'done' or 'finished' to exit loop, Claude might say 'done' in step 1 but theres still a lot of steps, always use stop_reason"
+        },
+        {
+          "name": "Fixed iteration cap as primary control",
+          "explanation": "Primary exit must always be stop_reason == end_turn"
+        },
+        {
+          "name": "Keyword detection for tool routing",
+          "explanation": "Read the structured tool_use blocks in the content array, dont check if claudes text mentions a tools name to decide what to call"
+        }
+      ],
+      "things_to_know": [
+        "Loop pattern",
+        "Tools are descriptions",
+        "stop_reason is the only control signal",
+        "Messages array grow every iteration",
+        "Model-driven means Claude what to do next (Claude is planner)",
+        "Tool results go back as user role messages, wrapped in tool_result block with the matching ID",
+        "Use while true with safety counter as fallback, never fixed range as primary exit condition"
+      ]
+    },
+    {
+      "part": 3,
+      "domain": 1,
+      "task": null,
+      "topic": "Multi agent coordinator",
+      "anti_patterns": [
+        {
+          "name": "Direct subagent-to-subagent communication",
+          "explanation": "Subagents never message each other"
+        },
+        {
+          "name": "Assuming inherited context",
+          "explanation": "Subagents start fresh"
+        },
+        {
+          "name": "Always-on full pipeline",
+          "explanation": "Triggering all subagents on every request regardless of complexity (dynamic routing)"
+        },
+        {
+          "name": "Overly narrow decomposition",
+          "explanation": "Splitting tasks so finely that subagents have overlapping scopes"
+        },
+        {
+          "name": "Raw text handoffs",
+          "explanation": "Passing unstructured text between agents with no source attribution (source, URL, date)"
+        }
+      ],
+      "things_to_know": [
+        "Hub-and-spoke - coordinator and subagents",
+        "Isolated context - subagents start fresh",
+        "Responsibilities - decompose -> delegate -> aggregate -> evaluate -> respond",
+        "Task tool - spawns subagents; coordinators allowed_tools must include \"Task\"",
+        "Parallel execution - multiple task calls",
+        "Sequential execution - one task per loop iteration",
+        "Dynamic routing - only invoke subagents needed for request",
+        "Structured harndoffs - every response from subagents need to be structured",
+        "Iterative refinement - coordinator evaluates results, re-delegates if needed"
+      ]
+    },
+    {
+      "part": 4,
+      "domain": 1,
+      "task": null,
+      "topic": "Subagent config & context",
+      "anti_patterns": [
+        {
+          "name": "Forgetting \"Task\" in allowed_tools",
+          "explanation": "Cant spawn subagents"
+        },
+        {
+          "name": "Giving all tools too all agents",
+          "explanation": ""
+        },
+        {
+          "name": "Dumping entire conversation history into task prompt",
+          "explanation": ""
+        },
+        {
+          "name": "Procedural prompts that specify every step",
+          "explanation": "Let Claude decide execution path"
+        },
+        {
+          "name": "Unstructured data handoffs",
+          "explanation": "Raw text blobs with no metadata - always include source, date, confidence"
+        },
+        {
+          "name": "Treating parallel vs sequential as a style preference",
+          "explanation": ""
+        }
+      ],
+      "things_to_know": [
+        "Task tool creates isolated subagents - \"Task\" MUST be in coordinators allowed_tools",
+        "AgentDefinition has 5 fields - name, description, system_prompt, tools, allowed_tools",
+        "Minimum-tools principle - each agent only gets tools needed for the job",
+        "Subagents start black - pass all needed context: facts, constraints, format, prior results",
+        "Sequential = await chain - parallel = asyncio.gather()",
+        "Fork = multiple subagents from same baseline, each exploring different direction",
+        "Specify goals + output format - never specify exact tool call sequences",
+        "Structured metadata in all handoffs - source, date, confidence score for every cross-agent data transfer"
+      ]
+    },
+    {
+      "part": 5,
+      "domain": 1,
+      "task": null,
+      "topic": "Multi-step workflows",
+      "anti_patterns": [
+        {
+          "name": "\"Dont run payment without validation\" as prompt, trusting Claude will follow it. Correct way is to use code gate that blocks payment_tool, until validate_card_tool passes",
+          "explanation": ""
+        },
+        {
+          "name": "Claude calls tools out of oder",
+          "explanation": "It thinks skipping a step is efficient. Correct way is to enforce order with prerequisite gate checks"
+        },
+        {
+          "name": "Escalating with \"i need help\"",
+          "explanation": "Human has no context to act. Correct way is using structured handoff - action_requested, context, options, recommended_action"
+        },
+        {
+          "name": "Registering hooks but ignoring their return values. Always propagate hook decisions",
+          "explanation": "If a hook block, the tool must not run"
+        },
+        {
+          "name": "Decomposing depended concerns in parallel",
+          "explanation": "Agents that share state or need each others output. Only parallelize truly independent investigations"
+        }
+      ],
+      "things_to_know": [
+        "Probabilistic = claudes judgement (prompts), deterministic = your code (enforcement)",
+        "Safety-critical constraints MUST be code-enforced",
+        "Prerequisite gates block downstream tools until prerequisites succeed",
+        "Irreversibility test - if a mistake cannot be undone -> code enforcement is required",
+        "Structured escalation handoffs - always include action_requested, context, options, recommended_action",
+        "PreToolUse can block, modify, allow. PostToolUse can validate, transform, record",
+        "Multi-concert decomposition - parallelize independent concerns only, if concern B need A's output - use sequential"
+      ]
+    },
+    {
+      "part": 6,
+      "domain": 1,
+      "task": "1.5",
+      "topic": "SDK hooks & data normalization",
+      "anti_patterns": [
+        {
+          "name": "Relying on prompts for data consistency",
+          "explanation": "Claude misinterprets unix timestamps, use hooks"
+        },
+        {
+          "name": "Blocking calls with no explanation",
+          "explanation": "Claude retries endlessly, always return clear message and alternative action"
+        },
+        {
+          "name": "Silently modifying data in hooks",
+          "explanation": "Debugging becomes impossible, always log all transformations and keep originals"
+        },
+        {
+          "name": "Using hooks for soft preferences",
+          "explanation": "Adds latency, reserve them for hard rules only"
+        },
+        {
+          "name": "No redirect on blocked calls",
+          "explanation": "Claude will get stuck, always provide alternative - escalation, different tool, human handoff"
+        }
+      ],
+      "things_to_know": [
+        "PostToolUse hooks normalize data into consistent formats",
+        "PreToolUse hooks block policy-violating calls",
+        "Hooks are deterministic, prompts are probabilistic (1-5% failure)",
+        "Always explain why call was blocked",
+        "Normalization targets - unix to iso, numeric to string statuses, regional to standard dates",
+        "Keep hooks fast - they run on every tool call, no network calls",
+        "\"Guarantee compliance\" answer is always hooks, not prompts"
+      ]
+    },
+    {
+      "part": 7,
+      "domain": 1,
+      "task": "1.6",
+      "topic": "Two fundamental approaches",
+      "anti_patterns": [
+        {
+          "name": "All files, one prompt",
+          "explanation": "Attention dilution trap, always decompose into profile passes"
+        },
+        {
+          "name": "Using dynamic decomposition for predictable tasks",
+          "explanation": ""
+        },
+        {
+          "name": "Using chaining for exploratory tasks",
+          "explanation": ""
+        },
+        {
+          "name": "Overly narrow subtask definitions",
+          "explanation": "Coordinator tasked with researching \"create industries\" decomposes it only into visual arts subtasks, something like fils or music is missed. Subtasks must cover the full scope"
+        },
+        {
+          "name": "No cross-file integration pass",
+          "explanation": "Always add a cross-cutting integration pass"
+        }
+      ],
+      "things_to_know": [
+        "Prompt chaining - fixed sequential pipeline, use for predictable repeatable tasks",
+        "Dynamic decomposition - adaptive plan, use for open ended investigation where scope is unknown",
+        "Split large reviews into per-file passes plus a separate cross-file integration pass",
+        "Attention dilution - LLMs pay less attention for content thats not in beginning or end of context",
+        "Adaptive plans add, remove, reorder steps based on findings",
+        "Chaining is cheaper, dynamic decomposition costs more"
+      ]
+    },
+    {
+      "part": 8,
+      "domain": 1,
+      "task": "1.7",
+      "topic": "Session",
+      "anti_patterns": [
+        {
+          "name": "Resuming code when files were heavily modified",
+          "explanation": "You should start fresh or tell Claude explicitly what changed"
+        },
+        {
+          "name": "Starting fresh when context is still valid",
+          "explanation": "Resume instead"
+        },
+        {
+          "name": "Never using named sessions",
+          "explanation": "You lose all progress when terminal is closed"
+        },
+        {
+          "name": "Forking for simple linear tasks",
+          "explanation": "Only use forks when comparing alternatives in parallel"
+        },
+        {
+          "name": "Resuming with exhausted context",
+          "explanation": "Start fresh with injected concise summary of key findings"
+        }
+      ],
+      "things_to_know": [
+        "--resume - resumes named session with full conversation history",
+        "Stale context is biggest risk of resumption",
+        "Mitigation 1: inform the resumed session about specific changes",
+        "Mitigation 2: start a fresh session and inject a structured summary of prior key findings",
+        "fork_session - creates session branches from shared analysis baseline, use this to compare strategies in parallel",
+        "Start fresh when code changed significancy, context is exhausted, or taking new direction",
+        "Session management is all about preserving valuable analysis while avoiding stale context"
+      ]
+    },
+    {
+      "part": 9,
+      "domain": 2,
+      "task": "2.1",
+      "topic": "Tool design & MCP integration",
+      "anti_patterns": [
+        {
+          "name": "Minimal descriptions",
+          "explanation": "Tool descriptions should include purpose, inputs, outputs, when to use"
+        },
+        {
+          "name": "Overlapping descriptions",
+          "explanation": "Each tool must have unique description, otherwise Claude can pick any of such tools"
+        },
+        {
+          "name": "Generic tool names",
+          "explanation": ""
+        },
+        {
+          "name": "System prompt keyword collisions",
+          "explanation": "Tool names should not match system prompt words"
+        },
+        {
+          "name": "Missing boundary conditions",
+          "explanation": "State when not to use the tool, example - not for PDFs"
+        }
+      ],
+      "things_to_know": [
+        "Tool description is the primary mechanism how Claude chooses the tool",
+        "Five primary elements for tool description - purpose, input format, output, when to use, when not to use",
+        "Split generic tools to specific tools",
+        "Renaming ambiguous tools - dont chose generic names",
+        "System prompt keywords can make Claude pick tools just by keyword matches",
+        "When exam shows misrouting problem - improve the description first"
+      ]
+    },
+    {
+      "part": 10,
+      "domain": 2,
+      "task": "2.2",
+      "topic": "Structured error responses for MCP tool",
+      "anti_patterns": [
+        {
+          "name": "Generic errors",
+          "explanation": "Include errorCategory, isRetryable, suggestion"
+        },
+        {
+          "name": "Returning empty results for failures",
+          "explanation": "An empty array tells the user that nothing exists when in reality it was timeout error"
+        },
+        {
+          "name": "Retrying business rule violations",
+          "explanation": "Set business rule violations as isRetryable: false"
+        },
+        {
+          "name": "Propagate all errors to the coordinator",
+          "explanation": "Handle transient errors locally in subagents"
+        },
+        {
+          "name": "No partial results in error reports",
+          "explanation": "Always include what was attempted and alternatives exist"
+        }
+      ],
+      "things_to_know": [
+        "4 Error categories - transient, validation, business, permission",
+        "5 Structure error fields - errorCategory, isRetryable, message, customerMessage, suggestion",
+        "Access failures vs empty results",
+        "Local recovery for subagent transient errors",
+        "IsRetryable: false on business violations prevent wasted max_tokens",
+        "Escalation reports - always include partial results and alternatives in escalation reports"
+      ]
+    },
+    {
+      "part": 11,
+      "domain": 2,
+      "task": "2.3",
+      "topic": "Tool distribution",
+      "anti_patterns": [
+        {
+          "name": "Every agent gets all tools",
+          "explanation": "Maximizes decision complexity"
+        },
+        {
+          "name": "18 Tools per agent",
+          "explanation": "Reliability drops when agent has more than 4-5 tools"
+        },
+        {
+          "name": "No cross-role tools at all",
+          "explanation": "Forces expensive roundtrip with the coordinator for simple operations"
+        },
+        {
+          "name": "Auto for output",
+          "explanation": "Using \"auto\" when structured output is required, Claude may return text. Use \"any\" to guarantee a tool call"
+        },
+        {
+          "name": "Generic tools",
+          "explanation": "Broad tools like fetch_url, replace them with alternatives with limited scope"
+        }
+      ],
+      "things_to_know": [
+        "Too many tools degrade reliability, aim for 4-5 tools per subagent",
+        "Scoped access - each subagent only gets the tools they need for their role",
+        "Cross-role tools are the exception, they are for high-frequence operations that would otherwise require roundrips with coordinator",
+        "tool_choice - auto (Claude decides), any (must call any tool), forced (must call specific tool)",
+        "Forced tool selection ensures a specific tool runs first, used for ordered pipelines",
+        "Replace generic tools with constrained alternatives that limit scope (fetch_url vs load_document)"
+      ]
+    },
+    {
+      "part": 12,
+      "domain": 2,
+      "task": "2.4",
+      "topic": "MCP server integration",
+      "anti_patterns": [
+        {
+          "name": "Hardcoded secrets in .MCP.JSON",
+          "explanation": "Use ${token}"
+        },
+        {
+          "name": "Buildint custom servers for standard integrations",
+          "explanation": "Use community servers"
+        },
+        {
+          "name": "No resources for content catalogs",
+          "explanation": "Agents will keep repeatedly explore tool calls to discover whats available. Expose issue sumaries, schemas, categories as resources"
+        },
+        {
+          "name": "Shared config at user level",
+          "explanation": "For team based configs they need to be in project root, not ~/.Claude.JSON"
+        },
+        {
+          "name": "Minimal MCP tool description",
+          "explanation": "Fix the description by modifying Claude.md, not the MCP itself"
+        }
+      ],
+      "things_to_know": [
+        "Shared vs user level configs - .MCP.JSON - commited, ~/.Claude.JSON - user stored",
+        "${token} - keep actual keys out of config files",
+        "Claude discovers all MCP tools simultaneously at connection",
+        "MCP resources are read-only catalogs - issue summaries, database schemas, documentation outlines",
+        "Build custom MCP servers when no community ones exist",
+        "Enhance MCP descriptions by modifying Claude.md, not MCP directly"
+      ]
+    },
+    {
+      "part": 13,
+      "domain": 2,
+      "task": "2.5",
+      "topic": "6 Built in tools",
+      "anti_patterns": [
+        {
+          "name": "Reading all files upfront",
+          "explanation": "This fills context window with irrelevent files, start with grep to find entry points, then read selectivly"
+        },
+        {
+          "name": "Using grep to find file names",
+          "explanation": "Use glob"
+        },
+        {
+          "name": "Using write to modify one line",
+          "explanation": "Use edit for small changes"
+        },
+        {
+          "name": "Using edit on non-unique match",
+          "explanation": "Include more surrounding context or fallback to read + write strategy"
+        },
+        {
+          "name": "Using bash for file search",
+          "explanation": "Built in grep and glob are more optimal"
+        }
+      ],
+      "things_to_know": [
+        "Grep searches file contents, glob searches file names and paths",
+        "Search strategy - grep first, then read",
+        "Edit for targeted changes require unique match, write for new files or complete rewrides",
+        "Edit fails on non-unique match - use fallback - read + write",
+        "Incremental exploration - follow imports and functions calls step by step - dont read entire codebase",
+        "Bash is for build, test, install, git - not for filesearch, use built in grep and glob tools"
+      ]
+    },
+    {
+      "part": 14,
+      "domain": 3,
+      "task": "3.1",
+      "topic": "Claude.md hierarchy",
+      "anti_patterns": [
+        {
+          "name": "Massive monolithic Claude.md file",
+          "explanation": "Split it with imports or rules"
+        },
+        {
+          "name": "Team conventions at user level config",
+          "explanation": "Other team members wont get them, put them at project-level"
+        },
+        {
+          "name": "Personal prefs at project-level",
+          "explanation": "Personal preferences belong in ~/.Claude/Claude.md - not commited"
+        },
+        {
+          "name": "No modular organization",
+          "explanation": "Use imports or rules"
+        },
+        {
+          "name": "Not checking /memory when Claude ignores rules",
+          "explanation": "Verify that Claude sees the config"
+        }
+      ],
+      "things_to_know": [
+        "Three config levels - user, project, subdirectory",
+        "Priority tiers - subdirectory > project > user",
+        "Add @import external md files to keep Claude.md small and readable",
+        ".Claude/rules/ - directory holds rules and no imports needed, this is loaded automatically",
+        "Split monolithic Claude.md files to small file with imports/rules",
+        "Use /memory to verify that Claude is loading your rules",
+        "Team member missing conventions - check if config is at user-level instead of project-level"
+      ]
+    },
+    {
+      "part": 15,
+      "domain": 3,
+      "task": "3.2",
+      "topic": "Slash commands & skills",
+      "anti_patterns": [
+        {
+          "name": "Team commands at user level",
+          "explanation": "Know personal vs project level"
+        },
+        {
+          "name": "Skills without fork context",
+          "explanation": "Verbose output will fill the main conversation, use isolated sub-agent with fork"
+        },
+        {
+          "name": "Skills for full tool access for read only tasks",
+          "explanation": "Use allowed-tools to restrict/protect from executing unwanted tools"
+        },
+        {
+          "name": "Universal sdandard as skill",
+          "explanation": "If something needs to be run always - use Claude.md, if something needs to be run sometimes - use skills"
+        },
+        {
+          "name": "User skills with same name as project skills",
+          "explanation": "Project level will override user level - use different name to avoid this collision"
+        }
+      ],
+      "things_to_know": [
+        "Commands - user vs project scope",
+        "Skills support with YAML formatter, context:fork, allowed-tools, argument-hint",
+        "Content: fork - isolates skill in sub-agent",
+        "Allowed-tools - restricts tool access",
+        "Skills are on-demand, Claude.md always loaded - universal standards stay in Claude.md, tasks worflows go in skills",
+        "Personal skill variants must have different name to avoid overriding team skills"
+      ]
+    },
+    {
+      "part": 16,
+      "domain": 3,
+      "task": "3.3",
+      "topic": "Path specific rules",
+      "anti_patterns": [
+        {
+          "name": "Using subdirectory Claude.md for cross-cutting concerns",
+          "explanation": "Its inefficient to put Claude.md files in every directory - use path specific rules"
+        },
+        {
+          "name": "No paths field in rules file",
+          "explanation": "Without path field rules always loaded, use path to scope the rule"
+        },
+        {
+          "name": "Overly broad glob patterns",
+          "explanation": "Be specifc"
+        },
+        {
+          "name": "Relying on Claude to infer which section applies",
+          "explanation": "Use paths"
+        }
+      ],
+      "things_to_know": [
+        ".Claude/rules/ files with a path enable conditional convention loading",
+        "Glob patterns control when rules load",
+        "Path-specific rules beat subdirectory Claude.md for cross-cutting concerns (tests spread everywhere, would need to create a lot of Claude.md files)",
+        "Token saving - only load relevant conventions by narrowing path scope",
+        "Maintaining conventions for files spread across many directories - use path-specific rules, not subdirectory Claude.md files"
+      ]
+    },
+    {
+      "part": 17,
+      "domain": 3,
+      "task": "3.4",
+      "topic": "When to use plan mode vs direct execution",
+      "anti_patterns": [
+        {
+          "name": "Using direct execution on architectural change",
+          "explanation": "Use plan mode"
+        },
+        {
+          "name": "Using plan mode on a single file bufxi",
+          "explanation": "Unnecessary overahead, scope is already clear"
+        },
+        {
+          "name": "Starting over when complexity is found",
+          "explanation": "Start with plan mode when complexity is suspected"
+        },
+        {
+          "name": "Plan mode without reviewing the plan",
+          "explanation": "The checkpoint is the whole point of plan mode, review it before committing"
+        },
+        {
+          "name": "Skipoping explore subagent",
+          "explanation": "Main context fills with verbose output from discovery, use explore agent to isolate investigation output"
+        }
+      ],
+      "things_to_know": [
+        "Plan mode - architectural changes, multi-files changes, multiple approaches, migrations",
+        "Direct execution - single file changes, simple bug fixes, known approaches",
+        "Explore subagent runs in isolation when investigating, only clean output returns back to main context",
+        "Combine both modes, first plan, then review, then execute",
+        "When exam describes monolith-to-microservice or a large migration - use plan mode, adding a simple validation - direct execution",
+        "Plan modes value is in the human review checkpoint - always review the plan and adjust if needed"
+      ]
+    },
+    {
+      "part": 18,
+      "domain": 3,
+      "task": "3.5",
+      "topic": "Iterative refinement",
+      "anti_patterns": [
+        {
+          "name": "Only using descriptions",
+          "explanation": "Provide 2-3 concrete input/output examples"
+        },
+        {
+          "name": "Implementing without tests",
+          "explanation": "Write tests first, then iterate using failures"
+        },
+        {
+          "name": "Fixing interacting issues one at the time",
+          "explanation": "Address interacting issues in one pass"
+        },
+        {
+          "name": "Skipping interview pattern in unknown codebases",
+          "explanation": "Ask Claude to interview you"
+        },
+        {
+          "name": "Vague error reports",
+          "explanation": "Share tests failures with expected results"
+        }
+      ],
+      "things_to_know": [
+        "Concrete input/output examples are more effective than prose descriptions",
+        "Test-driven iteration - write tests first, run, then iterate failures until pass",
+        "Interview pattern - tell Claude ask questions before committing in unfamiliar domains",
+        "Interacting issues - must be fixed in one message",
+        "Specific tests cases - most efficient way to handle edge cases"
+      ]
+    },
+    {
+      "part": 19,
+      "domain": 3,
+      "task": "3.6",
+      "topic": "CI/CD integration",
+      "anti_patterns": [
+        {
+          "name": "Running Claude -p in CI/CD",
+          "explanation": "Without the -p flag it runs as interactive session, doesnt exit"
+        },
+        {
+          "name": "Reviewing code in same session where the code was written",
+          "explanation": "Claude will be biased, likely wont catch issues"
+        },
+        {
+          "name": "No prior findings in re-reviews",
+          "explanation": "Include prior findings, report only new issues"
+        },
+        {
+          "name": "No Claude.md for CI context",
+          "explanation": "Document review criteria in Claude.md"
+        },
+        {
+          "name": "Text output in CI",
+          "explanation": "Use --output-format JSON"
+        },
+        {
+          "name": "Not providing existing tests while generating new ones",
+          "explanation": "Include existing test files in context"
+        }
+      ],
+      "things_to_know": [
+        "-p flag runs Claude non interactively",
+        "--output-format JSON - produces structured JSON response",
+        "Claude.md provide consistent context for both interactive and non interactive sessions",
+        "Session isolation - always review in new session",
+        "Include prior findings to re-reviews to prevent duplicates",
+        "Include existing tests when generating new ones to avoid duplicate coverage"
+      ]
+    },
+    {
+      "part": 20,
+      "domain": 4,
+      "task": "4.1",
+      "topic": "Prompt design & explicit criteria",
+      "anti_patterns": [
+        {
+          "name": "\"Be conservative\"",
+          "explanation": "This is subjective and it lets Claude decide - define explicit categories of what to report"
+        },
+        {
+          "name": "\"Only high-confidence findings\"",
+          "explanation": "Again lets Claude decide what is high-confidence - list specific issue types with code examples"
+        },
+        {
+          "name": "Reporting all possible issues",
+          "explanation": "Define what to skip as explicitly what to report"
+        },
+        {
+          "name": "Keeping high false positives categories",
+          "explanation": "Disable the, improve criteria, re-enable later"
+        },
+        {
+          "name": "No severity examples",
+          "explanation": "Provide code examples for each severity level"
+        }
+      ],
+      "things_to_know": [
+        "Explicit criteria outperform vague descriptions every time",
+        "Categorical definitions (list of issue types) work better than subjective thresholds",
+        "Concrete code examples for each severity level",
+        "Define what to skip as explicitly as what to report",
+        "High false positive rates destroy trust across all categories - disable problematic categories and improve them before re-enabling"
+      ]
+    },
+    {
+      "part": 21,
+      "domain": 4,
+      "task": "4.2",
+      "topic": "Few-shot prompting",
+      "anti_patterns": [
+        {
+          "name": "Not including edge case examples",
+          "explanation": "Always include at least one edge case and null example"
+        },
+        {
+          "name": "Examples without reasoning",
+          "explanation": "Always include why each action was choosing"
+        },
+        {
+          "name": "Too many examples (10+)",
+          "explanation": "Wasted tokens, 2-4 is enough"
+        },
+        {
+          "name": "Examples that all look the same",
+          "explanation": "Claude doesnt learn how to differentiate, make examples structurally diverse"
+        },
+        {
+          "name": "Relying on instructions for format",
+          "explanation": "Show exact output format in examples"
+        }
+      ],
+      "things_to_know": [
+        "Few-shot examples are the most effective technique for consistent output when instructions alone produce inconsistent results",
+        "Include reasoning - \"why this action\" - so Claude learns the pattern",
+        "Show edge cases and ambiguous scenarios - this is where few-shot examples add the most value",
+        "Null and missing field handling - must be demonstrated via examples",
+        "2-4 Examples is the sweet spot - cover common cases, edge cases, format",
+        "Few-shot examples enable generalization to novel patterns"
+      ]
+    },
+    {
+      "part": 22,
+      "domain": 4,
+      "task": "4.3",
+      "topic": "Structured output patterns (why asking for JSON output in a prompt is unreliable)",
+      "anti_patterns": [],
+      "things_to_know": [
+        "tool_use with JSON schemas eliminates syntax errors (API enforces valid JSON at system level)",
+        "tool_choice: \"any\" - guarantees Claude calls a tool instead of returning text",
+        "Nullable fields prevent hallucination - make fields optional",
+        "Enum with \"unclear\" and \"other\" prevents forced misclassification of ambiguous cases",
+        "Forced tool selection ensures a specific extract tool runs first when you know the document type",
+        "Tool use eliminates syntax errors but not semantic errors (values of JSON can still be wrong)"
+      ]
+    },
+    {
+      "part": 23,
+      "domain": 4,
+      "task": "4.4",
+      "topic": "Validation & retry loops",
+      "anti_patterns": [
+        {
+          "name": "Retrying when data is absent from the source",
+          "explanation": "The correct approach is check if data is not missing, if it is just return null"
+        },
+        {
+          "name": "Retrying without specific errors",
+          "explanation": "Always include previous errors when retrying"
+        },
+        {
+          "name": "No detected_pattern field",
+          "explanation": "Without this tag, cant analyze false positive trends"
+        },
+        {
+          "name": "Only checking structural validity",
+          "explanation": "Misses the semantic errors"
+        },
+        {
+          "name": "Unlimited retries",
+          "explanation": "Max 1-2 retries"
+        },
+        {
+          "name": "Not knowing when to retry",
+          "explanation": "Retrying when data is missing vs retrying when data was missed or misformatted"
+        }
+      ],
+      "things_to_know": [
+        "Retry-with-error-feedback - include original document, failed extraction, specific errors in the retry prompt",
+        "Retries only work for structured errors or mismatched format, not for information absence from the source",
+        "Self-correction - extract stated_total and calculated_total, flag conflicts with conflict_detected boolean",
+        "Semantic validation (totals match, dates format consistent) is separate from schema validation (JSON valid)"
+      ]
+    },
+    {
+      "part": 24,
+      "domain": 4,
+      "task": "4.5",
+      "topic": "Batch processing strategies",
+      "anti_patterns": [
+        {
+          "name": "Using batch API for blocking workflows",
+          "explanation": "For real time use synchronous API"
+        },
+        {
+          "name": "Resubmiting the entire batch on partial failure",
+          "explanation": "Resubmit only the failures by using custom_id"
+        },
+        {
+          "name": "No prompt refining before large batch",
+          "explanation": "Test on a sample set first with synchronous API"
+        },
+        {
+          "name": "Using batch for multi tool-calling tasks",
+          "explanation": "Batch API doesnt support multi tool call, use synchronous for agentic workflows"
+        },
+        {
+          "name": "No custom_id on batch requests",
+          "explanation": "Without it, you cant track the documents, always include meaningful custom ID"
+        }
+      ],
+      "things_to_know": [
+        "If someone is waiting for the result - use synchronous",
+        "Always refine prompt before commiting to large batches",
+        "Always include custom_id for batch requests",
+        "Only resubmit only failed batches, not entire batch",
+        "Batching API doesnt support multi tool calling",
+        "Batching API is 50% cheaper but has up to 24h latency"
+      ]
+    },
+    {
+      "part": 25,
+      "domain": 4,
+      "task": "4.5",
+      "topic": "Multi-instance review architectures",
+      "anti_patterns": [
+        {
+          "name": "Using same session to generate and review code",
+          "explanation": "Code is biased, use new session"
+        },
+        {
+          "name": "Running a single pass for 14+ files",
+          "explanation": "Attention delution and inconsistent depth, split into multi-pass"
+        },
+        {
+          "name": "Using extended thinking as a substitute for code review",
+          "explanation": "Still code is biased, use new session"
+        },
+        {
+          "name": "Low confidence (rating) create too many pull request comments",
+          "explanation": "Use verification pass to reduce noice"
+        },
+        {
+          "name": "Skipping cross-pass entirly",
+          "explanation": "Always include it after local passes"
+        }
+      ],
+      "things_to_know": [
+        "Self-review is biased, use separate session for reviews",
+        "Independed instances per file review catch issues the generator is blind to",
+        "Multi-pass architecture - per-file parallel instances + cross-file integration (sequential) + confidence verification",
+        "Cross-file pass - catches data flow issues, API mismatches, inconsistent patterns",
+        "Confidence rating - routes high-confidence findings to automation, uncertain ones for human reviews"
+      ]
+    }
+  ]
+}

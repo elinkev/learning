@@ -1,0 +1,122 @@
+:root {
+  --bg: #fafafa;
+  --fg: #1a1a1a;
+  --muted: #666;
+  --accent: #2b6cb0;
+  --accent-fg: #fff;
+  --card-bg: #fff;
+  --border: #d8d8d8;
+  --good: #2f855a;
+  --bad: #c53030;
+  --good-bg: #c6f6d5;
+  --bad-bg: #fed7d7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181d;
+    --fg: #e8e8e8;
+    --muted: #9aa0a6;
+    --accent: #63b3ed;
+    --accent-fg: #0a0a0a;
+    --card-bg: #1f2228;
+    --border: #2c313a;
+    --good: #68d391;
+    --bad: #fc8181;
+    --good-bg: #1c3a2a;
+    --bad-bg: #3a1c1c;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.5;
+}
+
+header, main, footer {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+}
+
+header { padding-top: 2rem; }
+header h1 { margin: 0 0 0.25rem; font-size: 1.5rem; }
+.subtitle { color: var(--muted); margin: 0; font-size: 0.95rem; }
+
+footer { color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+footer a { color: var(--accent); }
+
+.view { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-top: 1rem; }
+.view h2 { margin-top: 0; }
+.hidden { display: none; }
+
+.row { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1rem; }
+.row label { font-weight: 600; font-size: 0.9rem; }
+fieldset.row { border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; }
+fieldset.row legend { font-weight: 600; padding: 0 0.25rem; }
+fieldset.row label { display: flex; align-items: center; gap: 0.5rem; font-weight: 400; margin: 0.25rem 0; }
+
+select, button, input[type="checkbox"] { font: inherit; }
+select { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
+
+button {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.info { color: var(--muted); font-size: 0.9rem; margin: 0; }
+.error { color: var(--bad); font-weight: 600; }
+
+.progress { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.75rem; }
+
+.card { border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.1rem; background: var(--bg); }
+.card .meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.card .stem { font-size: 1.05rem; margin: 0 0 1rem; }
+.card .stem code { background: var(--border); padding: 0.05em 0.3em; border-radius: 3px; }
+
+.choices { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.choices button {
+  text-align: left;
+  background: var(--card-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  font-weight: 400;
+  white-space: normal;
+}
+.choices button:hover:not(:disabled) { border-color: var(--accent); }
+.choices button.correct { background: var(--good-bg); border-color: var(--good); }
+.choices button.incorrect { background: var(--bad-bg); border-color: var(--bad); }
+
+.feedback { margin-top: 1rem; font-size: 0.95rem; }
+.feedback.good { color: var(--good); }
+.feedback.bad { color: var(--bad); }
+
+.quiz-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+
+.score { font-size: 1.2rem; font-weight: 600; }
+.score.good { color: var(--good); }
+.score.bad { color: var(--bad); }
+
+.miss { border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; margin: 0.6rem 0; background: var(--bg); }
+.miss .miss-stem { font-weight: 600; margin-bottom: 0.25rem; }
+.miss .miss-picked { color: var(--bad); font-size: 0.9rem; }
+.miss .miss-correct { color: var(--good); font-size: 0.9rem; }
+.miss .miss-source { color: var(--muted); font-size: 0.8rem; margin-top: 0.4rem; }
+
+.flash-back { margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border); }
+.flash-back .meta { margin-bottom: 0.3rem; }
+.flash-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }

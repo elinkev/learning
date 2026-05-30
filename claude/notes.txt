@@ -943,7 +943,298 @@ part 23
 		- retries only work for structured errors or mismatched format, not for information absence from the source
 		- self-correction - extract stated_total and calculated_total, flag conflicts with conflict_detected boolean
 		- semantic validation (totals match, dates format consistent) is separate from schema validation (json valid)
-		- max 1-2 retries then human review
+	- max 1-2 retries then human review
+part 24
+	- domain 4 - task 4.5 - batch processing strategies
+	- what is message batch api
+		- theres 2 ways to call claude
+		- synchronous - immedia response, standard cost (chabots, pre-merge checks, perfect for real-time use cases)
+		- message batches - up to 24h latency, 50% cheaper cost (overnight reports, weekly audits, for non-blocking use cases)
+		* need to know which workflow requires which api
+	- critical limitation - no multi-turn tool calling in batch
+		- with synchronous - turn 1 (claude calls get_roder() and returns result) -> turn 2 (claude calls check_paymen() and returns result) -> turn 3 (claude gives final answer)
+		- with barch - request (analyze this document) -> response (complete analysis in one shot)
+		* batch has no tool calls during processing
+	- matching the correct api to workflow
+		- pre-merge code review - its blocking developers cant wait 24hrs - use synchronous
+		- nightly debt report - ready by morning - use batch api
+		- weekly security audit - weekend processing - use batch api
+	- tracking & correlation - using custom_id to track results in batch api
+		- this is like a tracking id
+		- each request includes a custom_id that links the respoonse back to the original document
+		- batch_requests = {"custom_id": "invoice-01", "params": {...}, "custom_id": "invoice-02", "params": {...}}
+		* essential for tracking and identifying failures
+	- failure handling - resubmit only what failed
+		- idenfiy what failed - loop the batch result, check the status, compile a list with custom id and error message
+		- check the error if doc needs modifying (file too long, split the file into chunks) and resubmit the doc
+		* "context_limit" error means file is too long and needs to be split into chunks, other errors can be resubmited as is
+	- cost optimization - refine prompts before large batches
+		- first refine your prompt with synchronous api, check quality, fix prompt issues, continue until quality is acceptable
+		- then switch to batch api
+	- 5 anti-patterns
+		- using batch api for blocking workflows - for real time use synchronous api
+		- resubmiting the entire batch on partial failure - resubmit only the failures by using custom_id
+		- no prompt refining before large batch - test on a sample set first with synchronous api
+		- using batch for multi tool-calling tasks - batch api doesnt support multi tool call, use synchronous for agentic workflows
+		- no custom_id on batch requests - without it, you cant track the documents, always include meaningful custom id
+	- 6 things to know
+		- if someone is waiting for the result - use synchronous
+		- always refine prompt before commiting to large batches
+		- always include custom_id for batch requests
+		- only resubmit only failed batches, not entire batch
+		- batching api doesnt support multi tool calling
+		- batching api is 50% cheaper but has up to 24h latency
+part 25
+	- domain 4 - task 4.5 - multi-instance review architectures
+		- what catches issues that the code generator is blind to - separate independed instance
+		- how to handle inconsistent review quality - multi-pass review architecture
+	- why self-review doesnt work
+		- claude code is biased on the session where the code was created
+		- need to evaluate the code from a fresh session
+	- attention problem - single pass fails on large preserving
+		- attention dilution - when reviewing a large pull request (14 files) - claude mainly focuses on first and last files
+		- inconsistent depth - some files get detailed feedback, others not so detailed
+		- contradictory findings - flags pattern as problematic in one file, approves in other files
+		- solution - split files into focused passes - per-file local analysis, then cross-file integration and verification
+	- multi-pass architecture - three focused passes
+		- pass 1 - per-file - each file is reviewed with models full attention in parallel, each file is a new instance 
+		- pass 2 - cross-file integration - gather all data from pass 1, pass them into a single instance which focuses on integration issues, data flow, api contract missmatches, missing error propogations
+		- pass 3 - verification pass - optional, rates every finding from 1 to 5, findings rated 4+ get auto posted as pull request comments, 2-3 -> human review, 1 -> discarded
+	- full pipeline 
+		- 14 changed files
+		- pass 1 -> 14 instances review each file
+		- pass 2 -> 1 instance summarizes findings from pass 1
+		- pass 3 -> 1 instance rates findings from pass 2 and posts comments
+	- 5 anti-patterns
+		- using same session to generate and review code - code is biased, use new session
+		- running a single pass for 14+ files - attention delution and inconsistent depth, split into multi-pass
+		- using extended thinking as a substitute for code review - still code is biased, use new session
+		- low confidence (rating) create too many pull request comments - use verification pass to reduce noice
+		- skipping cross-pass entirly - always include it after local passes
+	- 5 things to know
+		- self-review is biased, use separate session for reviews
+		- independed instances per file review catch issues the generator is blind to
+		- multi-pass architecture - per-file parallel instances + cross-file integration (sequential) + confidence verification
+		- cross-file pass - catches data flow issues, api mismatches, inconsistent patterns
+		- confidence rating - routes high-confidence findings to automation, uncertain ones for human reviews
+part 26
+	- domain 5 - task 5.1 - context management
+		- if exam asks about losing details in long conversation - answer is case facts blocks
+		- if exam asks about wasting context tokens, the answer is trimmping tool outputs
+	- agent forgets context
+		- example -  customer is chatting with aget, by turn 15, agent forgets about the previously discussed order
+		- this happens because context window fills up with irrelevant data
+		- context window is like a desk with stuff on it, when it gets full - you need to remove some stuff
+		- models process information in beginning and end more carefully than the middle part
+	- progressive summarization risks
+		- each prompt gets summarized, but it still can lose critical details (can lose stuff like order id, customer id, custom exact date etc)
+		- numbers, dates, identifiers are vulnerable to summarization loss
+	- persistent structured data - the "case facts" pattern
+		- instead relying on summarization, extract critical facts into strucutred block
+		- this structured data is then included in every prompt
+		- example - case_facts = {"customer_id": "1234", "order_id": "111", "issues": ["order delayed", "refund requested"]}
+	- context budget - trimp verbose tool outputs
+		- tool outputs may give too much uneccesary info, trim in PostToolUse hooks before giving response (only return fields that matter)
+	- strategic placement - position-aware input organization
+		- system prompt - always at the top
+		- case facts summary - critical data, near the top
+		- detailed tool results
+		- latest user message - at the end
+	- downstream citation - require metadata in subagent outputs
+		- when subagents return findings, require metadata alongside content, so downstream agents can cite sources properly
+		- example - {"findings": [{"claim": "some fact", "date": "2020-01-01", "source": "some source"}]}
+	- 5 anti-patterns
+		- progressive summarization of number and dates - extract a structured case facts block and maintain it seperately
+		- including fool tool output with 40+ fields - trim output with PostToolUse hooks of irrelevant data
+		- putting all details in middle of context - place summaries of beggining and use session headers
+		- subagent output without metadata - require date, source, url in structured output if downstream agents need to cite sources
+		- dropping conversation history entirely - pass complete history, trim tool output not the structure
+	- 6 things to know
+		- lost in the middle means beginning and end processed reliably, middle may be overlooked
+		- progressive summarization loses dates, numbers, ids - use case facts blocks
+		- trim tool outputs to relevent fields only (40 fields -> 5 fields)
+		- position-aware - summaries at top, section headers, latest mesage at end
+		- require metadata in subagent outputs for downstream citation
+		- complete conversation history for coherence, but trim tool output within that history
+part 27
+	- domain 5 - task 5.2 - escalation & ambiguity resolution
+	- three triggers for escalation
+		- trigger 1 - explicit human request - "i want to speak to a manager"
+		- trigger 2 - policy gap - "can you match this competitors price"
+		- trigger 3 - no progress - multiple approaches tried, non resolved the issue
+	- system prompt design - explicit escalation criteria
+		- instead of simple prompt "escalate complex cases to human agent" (what is complex?) do explicit few shot examples
+		- "escalate when: 1) customer requests a human, 2) refund exceeds $5000, 3) three attempts made with no progress, do not escalate for standard lookups)
+		- in other words - explicitly cover when to escalate and when to not escalate with few shot examples
+	- exam-critical distinction - sentiment vs case complexity
+		- escalate on case complexity, not emotional tone
+		- "where is my package?!" - simple lookup, no need escalate
+		- "can you refund this product?" - needs management approval, escalate
+	- ambiguityresolution - multiple matches - ask, dont guesses
+		- when tool output returns multiple results, agent guesses which one to pick
+		- the correct approach is to ask for additional identifiers, never guess
+	- resolution pattern - acknowledge frustation, then resolved
+		- if the problem is resolvable, first offer a resolution, and only escalte if customer reiterates their preference for a human
+	- 5 anti-patterns
+		- investigating before escalating when a customer asks for a human - escalate immediately on explicit requests
+		- sentiment-based escalation, escalating because customer sounds angry - escalate on policy gaps and capability limits
+		- guessing when multiple customers match - ask for additional identifiers, nevver guess what to select
+		- escalating resolvable issues - resolve autonomasly when within capability
+		- vague escalation criteria - define explicit triggers with few-shot examples, show what to escalate and what not to
+	- 5 things to know
+		- three escalation triggers - ask for human, policy gap, no progress after retries
+		- honor human requests - dont investigate, escalate
+		- sentiment is unreliable - escalate based on case complexity, not emotional tone
+		- multiple matches need clarification - ask for more identifiers
+		- explicit criteria with examples product consistent escalation behavior
+part - 28
+	- domain 5 - task 5.3 - error propagation in multi agents
+		- this is all about creating a system that adapts to errors intelligently
+		- single agent systems dont have this problem because when tool fails, you handle it
+		- multi agent systems need to handle error reporting via coordinator for recovery decisions
+	- building blocks - why error quality matters
+		- bad protocol - "there was a problem"  - tells nothing
+		- good protocol - "customer X have requested order Y to be refunded" - has details
+	- structured error content - what a good error report looks like
+		- subagent returns this to coordinator on failure
+		- {"status": "partial_failure", "failure_type": "timeout", "partial_results": [...], "what_was_missed": "could not reach something", "alternative approaches": [...]}
+		- coordinator now needs to decide - retry, use partical results, or note the gap
+		- without detailed error coordinator would just see "search failed"
+	- generic vs structured errors - the difference is actionability
+		- generic - doesnt know partial results exit, doesnt know alternatives
+		- structured - has partial results, alternatives, full context for intelligent recovery
+	- correct approach - graceful degradation, adapt and continue
+		- coordinators job is to proceed with partial results and anotate the missing gaps, dont abort the entire workflow
+	- coverage annotations - annotate whats reliable and what isnt
+		- when a subagent partially fails, the final result needs to be annotated which results are well suported, and which have gaps
+	- local recovery - handle transient errors locally before propagating
+		- before reporting an error to coordinator, try fixing the issue locally first
+		- when failing fixing the issue locally, include how many attempts were tried in the error report
+	- 7 anti-patterns
+		- silent suppression, returning empty response instead of error - distinguish failures from valid empty results, return a structured error with failure type
+		- immediate termination when one sub agent fails - continue with parial results from successfull agents, note which areas failed, partial output better than no output
+		- generic "unavailable" errors - always include structured context like failure type, partial results, alternatives
+		- retuirning empty result as seccuss when an error happened - distinguish valid empty results from errors
+		- terminating workflow on first subagent failure - continue with partial results, annotate what failed
+		- no coverage annotations - always annotate well-supported vs partial vs gap areas
+		- propagating every transient error - handle transient errors locally with retries, dont clutter coordinator context if possible
+	- 5 things to know
+		- when a subagent fails - structured error must include failure type, attempted query, partial results, alternative approach
+		- never silently suppress errors - dont return empty result as a success when an error happened
+		- never terminate on first failure - dont stop entire workflow, use partial results from other subagents and annotate whas failed
+		- coverage annotations in synthesis output (well-supported, partial, gap)
+		- local recovery in subagents for transient errors
+part 29
+	- domain 5 - task 5.4 - large codebase context (investigation)
+		- if exam asks how to keep context clean during code exploration - subagent delegation with scratchpad files
+		- if it tasks about recovery - state persistance
+	- the problem - content degradation in large codebases
+		- when starting a session, in large code bases, claude would give accurate responses while context is still fresh
+		- over time, the context degrades and you will get vague references instead of specific details
+		- this topic is about detecting and preventing context degradataion
+	- solution 1 - scratchpad files, persistent external memory
+		- writing summaries of findings instead of keeping everything in memmory
+		- when context window fills up, agent reads these summaries instead of analyzing the code again
+	- solution 2 - subagent delegation for exploration
+		- instead of doing all exploration in the main agent, delegate the exploration for subagents and summaries their findings
+		- this makes the main agent context window with jest few lines instead of multiple source files
+	- solution 3 - /compact command
+		- compresses hours of discussions
+		- this is a tool to summarize your conversation, use when noticing conversations becoming vague
+	- solution 4 - structured state persistence for crash recovery
+		- for multi-hour investigations, agents should export their findings to a known location so work survives a session crash
+		- on crash, coordinator then loads the manifest, injects it into the new sessions context, and continues where it let off
+	- solution 5 - summarize between phases
+		- when investigation has multiple phases, summarize each phase and spawn a new agent for next phase, pass the summary from previous phase downstream
+	- 5 anti-patterns
+		- reading all files in main agent - delegate to subagents, summarize the findings, main agent should make the decisions, not read source code
+		- no scratchpad for extended investigation - write findings to a file, reference later, this preserves discoveries across context bondries
+		- ignoring context degradation signals - use /compact proactively, deleage to subagents
+		- no state persistance - export structured state to manifest files so work can be recovered
+		- passing raw phase 1 output to phase 2 - summarize phase finding before injecing them to next phases
+	-  6 things to know
+		- context degrades over time, recognise the signal (no specific details)
+		- scrachpad files provide persistent memory, write key findings to files to reference them later
+		- delegate subagents to explore to keep the main agent context clean
+		- /compact command compresses session conversation, use proactively
+		- state persistence enables crash recovery, export manifest files
+		- summarize between phases, inject summary of phase 1 to phase 2 and so on
+part 30
+	- domain 5 - task 5.5 - human review workflows (field extraction from documents)
+		- no ai system is 100% accurate, the goal is to only route cases that actually need human review
+		- confidence callibration determines if issue needs to be resolved locally or handled for human review
+		- if exam asks about accuracy metrics - always validate by document type and field
+		- if exam asks about confidence scores - always calibrate against labeled validation sets before setting up automation
+		- if exam asks about quality monitoring - use stratified sampling to catch difficult document types
+		- if exam asks about review workflow - route by confidence: auto-accept high, human review medium, flag low as failed
+		- if exam asks about systemn improvement - it means human review must be fed back into the loop (recalibration, prompt changes)
+	- field-level confidence scores
+		- vendor_name: {value: "some vendor", confidence: 0.98}
+		- total_amount {value: $1234, confidence: 0.92}
+		- tax_amount: {value: null, confidence 0.6}
+		- category: {value: "unclear", confidence: 0.3}
+		- >= 0.95 - auto accept
+		- 0.5 - 0.95 - flag for human review, uncertain but extractable
+		- > 0.5 - flag as unable to extract
+	- calibration - model confidence is not actual accuracy
+		- step 1 - create a labeled validation set of 100+ documents
+		- step 2 - run the extraction model on all of them
+		- step 3 - compare model confidence to actual accuracy
+		- step 4 - adjust thresholds
+	- ongoing monitoring - stratified random sampling
+		- u have 100 documents, 90 of one type and 10 of other type, random sampling would most likely take always documents from the 90 pool
+		- stratified sampling means taking samples from rare and difficult categories  
+	- full workflow - from extraction to feedback loop
+		- model extract fields with per field confidence scores
+		- routing - high -> auto-accept, medium -> human review, low -> flag as failed
+		- human review - human sees document, extraction, and flagged fields with scores
+		- human correction feeds back into three systems
+		- 1) the final output
+		- 2) calibration data to update threshold
+		- 3) error pattern analysis to improve extraction prompts over time
+	- 5 anti-patterns
+		- relying on aggregate metrics - validate accuracy by document type and field seperately
+		- trusting model confidence without calibration - calibrate thresholds with labeled validation sets
+		- random sampling without stratification - use sampling weighted towards hard or rare types
+		- automating all hiigh-confidence extractions immediately - validate accuracy before automating
+		- no feedback loop from human corrections - use human corrections to update calibration confidence and improve extraction prompts over time
+	- 5 things to know
+		- field-level confidence - each extraction is scored individually, not the whole document
+		- calibrate thresholds - model can be innacurate, need label validation sets
+		- stratified sampling - sample rare/difficult document types, dont pick randomly
+		- route by confidence - auto accept high confidence, human review for medium, flag low as failed
+		- feedback loops - human corrections update calibration and improve prompts over time
+part 31 
+	- domain 5 - task 5.6 - provenance & uncertainty (report, news, statistics)
+		- if exam asks can a human verify every claim in the final report - if not, provenance was lost somewhere in pipeline
+		- if exam asks what preserves attribution - structured claim-source mappings
+		- if exam asks how to handle conflicts - annotate both values with context
+		- if exam asks about dates - its about including publication date in source metada and showing it in final report
+		- if exam asks about output structure - well-established, contested, gaps
+		- if exam asks about rendering - dont render all reports in one format
+	- the problem - attribution loss during compression
+		- each summarization strips away sorce details
+	- the solution - structured claim0source mappings
+		- every subagent pairts each clain with metadata, this metadata always persists
+	- conflict of sources - annotate the conflict, dont pick a winner
+		- two or more credible sources report different numbers, main agent should present both with context, dont pick just one
+	- temportal data - publication dates
+		- important to preserve source publication dates, final reports without dates will be more accurate
+	- synthesis output - strucure by confidence level
+		- final report should distinguish by ho well-supported each claim is
+		- reader needs to know what is accurate, what is contested, and what has gaps
+	- 5 anti-patterns
+		- summarizing findings without claim source mappings - each subagent should gather and preserve metadata containing url, name, date, excerpt, methodology
+		- choosing one source when multiple sources conflict - annotate conflicts with both values and source context
+		- omitting publication dates - always require publication date in structured output
+		- forcing every content type into the same format - each content type is rendered in its natural format - tables for financial data, prose for news articles, list for technical specs
+		- failing to distinguish well-supported and contested claims - structured output by confidence level - well-established, contested findings, gaps
+	- 5 things to know
+		- claim-source mappings must survive every level of synthasis
+		- conflicting sources - annotate all sources, dont pick one
+		- publication dates turn apparent contradictions into trends, always require them in subagent outputs
+		- synthesis output must distinguish well-established, contested, gap findings
+		- content-type rendering - financial data as tables, news as prose, technical data as lists, dont output everything in one format
 
 What to do next:
 - build agent with sdk - implement agentic loop with tool calling, error handling, subagents, session management
