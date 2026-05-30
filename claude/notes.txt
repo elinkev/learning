@@ -944,3 +944,13 @@ part 23
 		- self-correction - extract stated_total and calculated_total, flag conflicts with conflict_detected boolean
 		- semantic validation (totals match, dates format consistent) is separate from schema validation (json valid)
 		- max 1-2 retries then human review
+
+What to do next:
+- build agent with sdk - implement agentic loop with tool calling, error handling, subagents, session management
+- configure claude code - claude.md hierarchy, path rules in /rules/, custom skills with formatter options
+- design & test mcp tools - write tool descriptions that differentiate similar tools, implement structured error responses
+- build extraction pipeline - use tool_use with json schemas, validation-retry loops, batch processing
+- practice prompt engineering - few shot examples for ambiguous scenarios, explicit review criteria, multi-pass architectures
+- study context management - extract structured facts from verbose outputs, scratchpads files, subagent delegation patterns
+- review escalation patterns - policy gaps, customer requests, inability to progress vs resolving autonomously with confidence
+- complete practice exam
